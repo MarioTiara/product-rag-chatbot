@@ -11,6 +11,7 @@ class Product(BaseModel):
     name: str
     category: str | None = None
     price: float | None = None
+    currency: str="IDR"
     processor_name: str | None = None
     processor_brand: str | None = None
     ram_expandable: str | None = None
@@ -39,10 +40,17 @@ class ProductSearchFilters(BaseModel):
     brand: str | None = None
     processor_brand: str | None = None
     processor_name: str | None = None
+    ram_expandable: str | None = None
     ram: str | None = None
     ram_type: str | None = None
-    display_type:str | None=None
+    ghz: str | None = None
+    display_type: str | None = None
+    display: str | None = None
+    gpu: str | None = None
     gpu_brand: str | None = None
+    ssd: str | None = None
+    hdd: str | None = None
+    battery_life: str | None = None
     min_price: float | None = Field(default=None, ge=0)
     max_price: float | None = Field(default=None, ge=0)
     min_stock: int | None = Field(default=None, ge=0)
