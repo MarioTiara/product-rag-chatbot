@@ -68,7 +68,7 @@ product-rag-chatbot/
 │   ├── rag_service.py
 │   └── chatbot.py
 ├── data/
-│   └── products.csv
+│   └── prodct.csv
 ├── scripts/
 │   └── import_products.py
 ├── .env
@@ -86,7 +86,7 @@ product-rag-chatbot/
 | `app/product_service.py` | Implements structured product search and stock lookup operations. |
 | `app/rag_service.py` | Handles document embeddings, vector indexing, and semantic retrieval. |
 | `app/chatbot.py` | Integrates the OpenAI API with backend retrieval tools. |
-| `data/products.csv` | Contains the initial product catalog. |
+| `data/prodct.csv` | Contains the initial product catalog. |
 | `scripts/import_products.py` | Imports product data from CSV into the database. |
 | `.env` | Stores environment variables and API configuration. |
 | `.gitignore` | Excludes sensitive files and generated artifacts from version control. |
@@ -156,7 +156,7 @@ Replace the placeholder API key with your own key. The model name is configurabl
 
 ### 5. Import product data
 
-Prepare `data/products.csv` with the required product fields, then run the CSV import script:
+Prepare `data/prodct.csv` with the required product fields, then run the CSV import script:
 
 ```bash
 python -m scripts.import_products
@@ -218,20 +218,7 @@ Customers can ask questions such as:
 - Which products are suitable for office work?
 - Can you compare two products based on their specifications?
 
-## Data Model
 
-The initial product catalog may contain the following fields:
-
-| Field | Description |
-|---|---|
-| `sku` | Unique product identifier. |
-| `name` | Product name. |
-| `category` | Product category. |
-| `price` | Product price in Indonesian rupiah (IDR). |
-| `stock_quantity` | Available stock quantity. |
-| `description` | Product description for retrieval and search. |
-| `specifications` | Technical or product specifications. |
-| `warranty` | Warranty information. |
 
 Stock quantities and prices should be retrieved from the relational database rather than inferred from vector search results.
 
