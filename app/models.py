@@ -56,3 +56,20 @@ class ProductSearchFilters(BaseModel):
     min_stock: int | None = Field(default=None, ge=0)
     max_stock: int | None = Field(default=None, ge=0)
     limit: int = Field(default=20, ge=1, le=100)
+
+
+class Conversation(BaseModel):
+    conversation_id: str
+    created_at: str
+    updated_at: str
+
+
+class ConversationMessage(BaseModel):
+    id: int
+    conversation_id: str
+    role: str
+    content: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
+    tool_call_id: str | None = None
+    tool_name: str | None = None
+    created_at: str

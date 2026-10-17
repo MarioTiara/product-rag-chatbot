@@ -36,6 +36,28 @@ CREATE TABLE IF NOT EXISTS products (
 )
 """
 
+CREATE_CONVERSATIONS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+CREATE_CONVERSATION_MESSAGES_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS conversation_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT,
+    tool_calls_json TEXT,
+    tool_call_id TEXT,
+    tool_name TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+)
+"""
+
 UPSERT_SQL = """
 INSERT INTO products (
     sku, brand, name, category, price, processor_name, processor_brand,
@@ -79,6 +101,7 @@ class DatabaseService:
     def connection(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self.db_path)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
         try:
             yield connection
         finally:
@@ -86,8 +109,9 @@ class DatabaseService:
 
     def initialize(self) -> None:
         with self.connection() as connection:
-            connection.execute("PRAGMA foreign_keys = ON")
             connection.execute(CREATE_TABLE_SQL)
+            connection.execute(CREATE_CONVERSATIONS_TABLE_SQL)
+            connection.execute(CREATE_CONVERSATION_MESSAGES_TABLE_SQL)
             self._ensure_column(connection, "products", "category", "TEXT")
             connection.commit()
 

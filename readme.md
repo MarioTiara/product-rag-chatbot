@@ -200,11 +200,34 @@ Example response:
 
 ```json
 {
+  "conversation_id": "b8c7f7f1-7d4f-4a7f-9c57-3e8d3a9b2f30",
   "answer": "There are 12 Lenovo ThinkPad E14 laptops available."
 }
 ```
 
 The response above is illustrative. Actual answers depend on the product records in the database.
+
+### Start a Conversation
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Tell me about ASUS VivoBook 14"}'
+```
+
+### Continue a Conversation
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"conversation_id":"b8c7f7f1-7d4f-4a7f-9c57-3e8d3a9b2f30","message":"What about the 8 GB version?"}'
+```
+
+### Get Conversation History
+
+```bash
+curl http://127.0.0.1:8000/chat/b8c7f7f1-7d4f-4a7f-9c57-3e8d3a9b2f30/history
+```
 
 ## Example Questions
 

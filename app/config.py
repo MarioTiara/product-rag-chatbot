@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     price_target_currency: str = "IDR"
     price_conversion_rate: float = 190.0
 
+    # Chat memory
+    chat_history_limit: int = 12
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",
