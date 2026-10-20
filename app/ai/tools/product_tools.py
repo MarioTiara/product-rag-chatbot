@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 from app.models import ProductSearchFilters
-from app.product_service import ProductService
+from app.services.product_service import ProductService
 
 
 PRODUCT_TOOLS: list[dict[str, Any]] = [
@@ -40,9 +40,14 @@ PRODUCT_TOOLS: list[dict[str, Any]] = [
                     "category": {"type": "string"},
                     "brand": {"type": "string"},
                     "processor_brand": {"type": "string"},
-                    "processor_name": {"type": "string"},
+                    "processor_name": {
+                        "type": "string",
+                        "description": "Processor family or model text to match, such as Intel Core i7.",
+                    },
                     "ram_expandable": {"type": "string"},
                     "ram": {"type": "string"},
+                    "min_ram": {"type": "number", "minimum": 0, "description": "Minimum RAM in GB."},
+                    "max_ram": {"type": "number", "minimum": 0, "description": "Maximum RAM in GB."},
                     "display_type": {"type": "string"},
                     "ram_type": {"type": "string"},
                     "ghz": {"type": "string"},
@@ -56,6 +61,11 @@ PRODUCT_TOOLS: list[dict[str, Any]] = [
                     "max_price": {"type": "number", "minimum": 0},
                     "min_stock": {"type": "integer", "minimum": 0},
                     "max_stock": {"type": "integer", "minimum": 0},
+                    "price_sort": {
+                        "type": "string",
+                        "enum": ["asc", "desc"],
+                        "description": "Sort matching products by price ascending or descending.",
+                    },
                     "limit": {"type": "integer", "minimum": 1, "maximum": 100},
                 },
                 "additionalProperties": False,
@@ -109,6 +119,8 @@ PRODUCT_TOOLS: list[dict[str, Any]] = [
                     "processor_name": {"type": "string"},
                     "ram_expandable": {"type": "string"},
                     "ram": {"type": "string"},
+                    "min_ram": {"type": "number", "minimum": 0},
+                    "max_ram": {"type": "number", "minimum": 0},
                     "display_type": {"type": "string"},
                     "ram_type": {"type": "string"},
                     "ghz": {"type": "string"},
@@ -122,6 +134,7 @@ PRODUCT_TOOLS: list[dict[str, Any]] = [
                     "max_price": {"type": "number", "minimum": 0},
                     "min_stock": {"type": "integer", "minimum": 0},
                     "max_stock": {"type": "integer", "minimum": 0},
+                    "price_sort": {"type": "string", "enum": ["asc", "desc"]},
                     "limit": {"type": "integer", "minimum": 1, "maximum": 100},
                 },
                 "additionalProperties": False,

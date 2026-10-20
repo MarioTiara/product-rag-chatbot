@@ -1,0 +1,94 @@
+{
+  "scenarios": [
+    {
+      "id": "product_stock_001",
+      "category": "structured_data",
+      "description": "Memeriksa stok produk berdasarkan nama",
+      "turns": [
+        {
+          "message": "Berapa stok ASUS VivoBook 14?",
+          "expected_contains": ["ASUS VivoBook 14"],
+          "expected_tool_calls": ["get_total_stock"]
+        }
+      ]
+    },
+    {
+      "id": "product_price_001",
+      "category": "structured_data",
+      "description": "Memeriksa harga produk berdasarkan nama",
+      "turns": [
+        {
+          "message": "Berapa harga Dell G15-5520?",
+          "expected_contains": ["Dell G15-5520"],
+          "expected_tool_calls": ["get_product_price"]
+        }
+      ]
+    },
+    {
+      "id": "product_specs_001",
+      "category": "product_search",
+      "description": "Mencari produk dengan beberapa spesifikasi",
+      "turns": [
+        {
+          "message": "Cari Lenovo Ideapad Slim 3 dengan RAM 8 GB dan SSD 512 GB serta prosesor AMD Ryzen 5",
+          "expected_contains": ["Lenovo Ideapad Slim 3", "8 GB", "512 GB", "Ryzen 5"],
+          "expected_tool_calls": ["search_products"]
+        }
+      ]
+    },
+    {
+      "id": "product_stock_002",
+      "category": "structured_data",
+      "description": "Memeriksa stok produk yang out of stock",
+      "turns": [
+        {
+          "message": "Berapa stok HP 15s-fy5007TU?",
+          "expected_contains": ["HP 15s-fy5007TU", "0"],
+          "expected_tool_calls": ["get_total_stock"]
+        }
+      ]
+    },
+    {
+      "id": "total_stock_001",
+      "category": "structured_data",
+      "description": "Menghitung total stok berdasarkan filter brand",
+      "turns": [
+        {
+          "message": "Berapa total stok laptop HP?",
+          "expected_contains": ["HP"],
+          "expected_tool_calls": ["get_total_stock"]
+        }
+      ]
+    },
+    {
+      "id": "memory_001",
+      "category": "conversation_memory",
+      "description": "Mempertahankan konteks produk dalam pertanyaan lanjutan",
+      "turns": [
+        {
+          "message": "Cari Acer One 14 dengan RAM 16 GB",
+          "expected_contains": ["Acer One 14", "16 GB"],
+          "expected_tool_calls": ["search_products"]
+        },
+        {
+          "message": "Kalau yang 8 GB?",
+          "expected_contains": ["Acer One 14", "8 GB"],
+          "expected_tool_calls": ["search_products"]
+        }
+      ]
+    },
+    {
+      "id": "unknown_product_001",
+      "category": "hallucination",
+      "description": "Tidak mengarang harga produk yang tidak ditemukan",
+      "turns": [
+        {
+          "message": "Berapa harga laptop XYZ-DOES-NOT-EXIST-999?",
+          "expected_contains": [],
+          "expected_tool_calls": ["get_product_price"],
+          "expected_not_contains": ["Rp1.000.000", "Rp5.000.000"]
+        }
+      ]
+    }
+  ]
+}

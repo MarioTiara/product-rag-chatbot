@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # Project root directory
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parents[2 ]
 
 
 class Settings(BaseSettings):
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4.1-mini"
 
     # Database
-    database_path: Path = BASE_DIR / "data" / "products.db"
+    database_path: Path = BASE_DIR / "data" / "products.sqlite3"
 
     # Application
     app_name: str = "Product RAG Chatbot"
@@ -25,9 +25,9 @@ class Settings(BaseSettings):
     log_file: Path = BASE_DIR / "logs" / "app.log"
 
     # Price conversion
-    price_source_currency: str = "INR"
+    price_source_currency: str = "USD"
     price_target_currency: str = "IDR"
-    price_conversion_rate: float = 190.0
+    price_conversion_rate: float = 17987.0
 
     # Chat memory
     chat_history_limit: int = 12

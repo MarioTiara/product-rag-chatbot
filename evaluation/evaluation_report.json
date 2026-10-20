@@ -1,0 +1,165 @@
+{
+  "summary": {
+    "total_turns": 8,
+    "passed_turns": 6,
+    "failed_turns": 2,
+    "pass_rate": 0.75,
+    "average_latency_ms": 2696.44,
+    "categories": {
+      "structured_data": {
+        "total": 4,
+        "passed": 2
+      },
+      "product_search": {
+        "total": 1,
+        "passed": 1
+      },
+      "conversation_memory": {
+        "total": 2,
+        "passed": 2
+      },
+      "hallucination": {
+        "total": 1,
+        "passed": 1
+      }
+    }
+  },
+  "results": [
+    {
+      "scenario_id": "product_stock_001",
+      "category": "structured_data",
+      "turn": 1,
+      "message": "Berapa stok ASUS VivoBook 14?",
+      "answer": "Stok ASUS VivoBook 14 yang tersedia saat ini adalah sebanyak 3620 unit. Apakah Anda ingin mengetahui varian atau informasi lainnya?",
+      "tool_calls": [
+        "get_total_stock"
+      ],
+      "latency_ms": 2786.86,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": false
+      },
+      "passed": false
+    },
+    {
+      "scenario_id": "product_price_001",
+      "category": "structured_data",
+      "turn": 1,
+      "message": "Berapa harga Dell G15-5520?",
+      "answer": "Harga Dell G15-5520 (D560736WIN9B) adalah Rp 13.243.000. Apakah Anda ingin mengetahui spesifikasi lengkap atau stoknya saat ini?",
+      "tool_calls": [
+        "get_product_price"
+      ],
+      "latency_ms": 2963.29,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": true
+      },
+      "passed": true
+    },
+    {
+      "scenario_id": "product_specs_001",
+      "category": "product_search",
+      "turn": 1,
+      "message": "Cari Lenovo Ideapad Slim 3 dengan RAM 8 GB dan SSD 512 GB serta prosesor AMD Ryzen 5",
+      "answer": "Maaf, saat ini tidak tersedia Lenovo Ideapad Slim 3 dengan RAM 8 GB, SSD 512 GB, dan prosesor AMD Ryzen 5 di database kami. Apakah Anda ingin saya mencari alternatif laptop Lenovo Ideapad Slim 3 dengan spesifikasi mendekati yang Anda inginkan?",
+      "tool_calls": [
+        "search_products"
+      ],
+      "latency_ms": 2147.06,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": true
+      },
+      "passed": true
+    },
+    {
+      "scenario_id": "product_stock_002",
+      "category": "structured_data",
+      "turn": 1,
+      "message": "Berapa stok HP 15s-fy5007TU?",
+      "answer": "Stok untuk HP 15s-fy5007TU saat ini tidak tersedia. Apakah Anda ingin mencari produk serupa lainnya?",
+      "tool_calls": [
+        "get_total_stock"
+      ],
+      "latency_ms": 2705.42,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": false
+      },
+      "passed": false
+    },
+    {
+      "scenario_id": "total_stock_001",
+      "category": "structured_data",
+      "turn": 1,
+      "message": "Berapa total stok laptop HP?",
+      "answer": "Total stok laptop merek HP saat ini adalah 50.588 unit. Apakah Anda ingin informasi lebih lanjut seperti harga atau spesifikasi?",
+      "tool_calls": [
+        "get_total_stock"
+      ],
+      "latency_ms": 2706.09,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": true
+      },
+      "passed": true
+    },
+    {
+      "scenario_id": "memory_001",
+      "category": "conversation_memory",
+      "turn": 1,
+      "message": "Cari Acer One 14 dengan RAM 16 GB",
+      "answer": "Saya menemukan Acer One 14 dengan RAM 16 GB yaitu Acer One 14 Z8-415 (UN.599SI.020) Laptop. Spesifikasi utamanya adalah layar 14 inci, prosesor Intel Core i5 generasi ke-11, RAM 16 GB DDR4 yang dapat diperluas hingga 32 GB, penyimpanan SSD 512 GB, dan sistem operasi Windows 11. Harga produk ini adalah sekitar Rp 6.648.100.- Apakah Anda ingin tahu lebih lanjut atau ingin membeli?",
+      "tool_calls": [
+        "search_products"
+      ],
+      "latency_ms": 2340.79,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": true
+      },
+      "passed": true
+    },
+    {
+      "scenario_id": "memory_001",
+      "category": "conversation_memory",
+      "turn": 2,
+      "message": "Kalau yang 8 GB?",
+      "answer": "Berikut adalah beberapa pilihan Acer One 14 dengan RAM 8 GB:\n\n1. Acer One 14 Z2-493 (UN.431SI.129) Laptop - AMD Dual Core Ryzen 3, 8 GB RAM, Windows 11, 1 TB HDD, Harga: Rp 5.699.810,-\n2. Acer One 14 Z2-493 (UN.431SI.146) Laptop - AMD Dual Core Ryzen 3, 8 GB RAM, Windows 11, 256 GB SSD, Harga: Rp 5.508.100,-\n3. Acer One 14 Z8-415 (UN.599SI.009) Laptop - Intel Core i3 11th Gen, 8 GB RAM, Windows 11, 256 GB SSD, Harga: Rp 5.129.810,-\n4. Acer One 14 Z8-415 (UN.599SI.011) Laptop - Intel Core i3 11th Gen, 8 GB RAM, Windows 11, 512 GB SSD, Harga: Rp 5.318.100,-\n5. Acer One 14 Z8-415 (UN.599SI.018) Laptop - Intel Core i5 11th Gen, 8 GB RAM, Windows 11, 512 GB SSD, Harga: Rp 7.598.100,-\n\nApakah Anda ingin informasi lebih detail tentang salah satu produk tersebut?",
+      "tool_calls": [
+        "search_products"
+      ],
+      "latency_ms": 3367.33,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": true
+      },
+      "passed": true
+    },
+    {
+      "scenario_id": "unknown_product_001",
+      "category": "hallucination",
+      "turn": 1,
+      "message": "Berapa harga laptop XYZ-DOES-NOT-EXIST-999?",
+      "answer": "Laptop dengan SKU atau nama \"XYZ-DOES-NOT-EXIST-999\" tidak ditemukan dalam database kami. Apakah Anda ingin saya mencari laptop lain dengan spesifikasi atau merek tertentu?",
+      "tool_calls": [
+        "get_product_price"
+      ],
+      "latency_ms": 2554.67,
+      "checks": {
+        "answer_contains_expected": true,
+        "answer_excludes_forbidden": true,
+        "expected_tools_called": true
+      },
+      "passed": true
+    }
+  ]
+}
