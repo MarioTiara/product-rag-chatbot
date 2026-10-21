@@ -1,27 +1,21 @@
 from typing import Annotated
-
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 
-from app.api.dependencies import get_product_service
+
+from app.api.dependencies import get_current_user, get_product_service
 from app.models.product import Product
+from app.schemes.stock import PriceResponse, StockResponse
 from app.services.product_service import ProductService
 from app.schemes.product import ProductSearchFilters
 
-router = APIRouter(prefix="/products", tags=["Products"])
+router = APIRouter(
+    prefix="/products",
+    tags=["Products"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
-class StockResponse(BaseModel):
-    product_code: str
-    stock: int
-    product: Product
 
-
-class PriceResponse(BaseModel):
-    product_code: str
-    price: float | None
-    currency: str
-    product: Product
 
 
 @router.get("/details", response_model=Product)

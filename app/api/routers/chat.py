@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 
 from app.ai.chatbot_service import ChatbotOrchestrator
-from app.api.dependencies import get_chatbot_orchestrator, get_conversation_store
+from app.api.dependencies import get_chatbot_orchestrator, get_conversation_store, get_current_user
 from app.schemes.chat import ChatRequest, ChatResponse
 from app.schemes.conversation import ConversationHistoryResponse
 from app.services.conversation_store import ConversationNotFoundError, ConversationStore
@@ -14,7 +14,8 @@ from app.services.conversation_store import ConversationNotFoundError, Conversat
 logger = logging.getLogger(__name__)
 
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(prefix="/chat", tags=["Chat"], dependencies=[Depends(get_current_user)])
+
 @router.post("", response_model=ChatResponse)
 def chat(
     payload: ChatRequest,

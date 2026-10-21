@@ -1,13 +1,14 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # Project root directory
-BASE_DIR = Path(__file__).resolve().parents[2 ]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -21,8 +22,20 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "Product RAG Chatbot"
     app_version: str = "0.1.0"
+    app_env: Literal["development", "production"] = "development"
     log_level: str = "INFO"
     log_file: Path = BASE_DIR / "logs" / "app.log"
+
+    # Authentication / JWT
+    jwt_secret_key: SecretStr
+    jwt_algorithm: Literal["HS256"] = "HS256"
+    access_token_expire_minutes: int = 30
+
+    # Development user
+    dev_user_id: str = "dev-user-001"
+    dev_username: str = "dev-user"
+    dev_password_hash: SecretStr
+    dev_user_active: bool = True
 
     # Price conversion
     price_source_currency: str = "USD"
