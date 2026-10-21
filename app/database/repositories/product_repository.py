@@ -7,7 +7,7 @@ from typing import Any
 import uuid
 
 from app.database.connection import DatabaseConnection
-from app.schemes.product_search import ProductSearchFilters
+from app.schemes.product import ProductSearchFilters
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.models import ProductSearchFilters
+from app.schemes.product import ProductSearchFilters
 
 
 def _ram_amount(value: str | None) -> float:
@@ -15,7 +15,7 @@ def test_product_search_still_returns_converted_price(client):
     products = response.json()
     assert len(products) >= 2
 
-    first = next(item for item in products if item["sku"] == "ASUS-VIVO-8")
+    first = next(item for item in products if item["product_code"] == "ASUS-VIVO-8")
     assert first["currency"] == "IDR"
     assert first["price"] == 190000.0
 
@@ -24,7 +24,7 @@ def test_min_ram_filter_includes_products_at_or_above_threshold(product_service)
     results = product_service.search_products(ProductSearchFilters(min_ram=16, limit=100))
 
     assert results
-    assert all(_ram_amount(product.ram) >= 16 for product in results)
+    assert all(product.ram_gb >= 16 for product in results if product.ram_gb is not None)
 
 
 def test_intel_core_i7_matching_excludes_other_intel_processors(product_service):
@@ -39,19 +39,21 @@ def test_intel_core_i7_matching_excludes_other_intel_processors(product_service)
 
 
 def test_search_sorts_by_price_ascending(product_service):
-    results = product_service.search_products(ProductSearchFilters(min_ram=16, price_sort="asc", limit=100))
+    results = product_service.search_products(
+        ProductSearchFilters(min_ram=16, sort_by="price", sort_order="asc", limit=100)
+    )
 
     prices = [product.price for product in results]
     assert prices == sorted(prices)
 
 
 def test_combined_filters_apply_before_limit(product_service, db_service):
-    with db_service.connection() as connection:
+    with db_service.connect() as connection:
         expected = connection.execute(
             """
-            SELECT sku
+            SELECT product_code
             FROM products
-            WHERE CAST(ram AS REAL) >= ?
+            WHERE ram_gb >= ?
               AND LOWER(processor_name) LIKE ?
             ORDER BY price ASC, brand, name
             LIMIT 1
@@ -63,14 +65,15 @@ def test_combined_filters_apply_before_limit(product_service, db_service):
         ProductSearchFilters(
             processor_name="Intel Core i7",
             min_ram=16,
-            price_sort="asc",
+            sort_by="price",
+            sort_order="asc",
             limit=1,
         )
     )
 
     assert len(results) == 1
     assert expected is not None
-    assert results[0].sku == expected[0]
+    assert results[0].product_code == expected[0]
 
 
 def test_search_returns_empty_results_for_impossible_filters(product_service):

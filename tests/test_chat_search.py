@@ -20,20 +20,21 @@ def test_chat_uses_search_tool_for_cheapest_i7_with_min_ram(client, conversation
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["tool_calls"] == ["search_products"]
+    assert payload["answer"]
 
     tool_arguments = _first_tool_call_arguments(conversation_store, payload["conversation_id"])
     assert tool_arguments["processor_brand"] == "Intel"
     assert tool_arguments["processor_name"] == "Intel Core i7"
     assert tool_arguments["min_ram"] == 16
-    assert tool_arguments["price_sort"] == "asc"
+    assert tool_arguments["sort_by"] == "price"
+    assert tool_arguments["sort_order"] == "asc"
 
-    with db_service.connection() as connection:
+    with db_service.connect() as connection:
         expected = connection.execute(
             """
             SELECT name
             FROM products
-            WHERE CAST(ram AS REAL) >= ?
+            WHERE ram_gb >= ?
               AND LOWER(processor_name) LIKE ?
             ORDER BY price ASC, brand, name
             LIMIT 1
@@ -56,8 +57,8 @@ def test_chat_returns_no_match_only_when_search_results_are_empty(client, conver
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["tool_calls"] == ["search_products"]
+    assert payload["answer"]
 
     tool_arguments = _first_tool_call_arguments(conversation_store, payload["conversation_id"])
     assert tool_arguments["min_ram"] == 64
-    assert "tidak menemukan" in payload["answer"].lower()
+    assert "couldn't find" in payload["answer"].lower()

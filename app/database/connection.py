@@ -2,13 +2,16 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
+from app.configs.config import get_settings
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "products.sqlite3"
+# PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+setting=get_settings() 
 
 
 class DatabaseConnection:
-    def __init__(self, db_path: Path = DEFAULT_DB_PATH):
+    def __init__(self, db_path: Path = setting.database_path):
         self.db_path = db_path
 
     @contextmanager

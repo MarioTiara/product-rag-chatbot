@@ -8,12 +8,13 @@ from pydantic import BaseModel, Field
 
 class Conversation(BaseModel):
     conversation_id: str
+    title:str | None= None 
     created_at: str
     updated_at: str
 
 
 class ConversationMessage(BaseModel):
-    id: int
+    id: str
     conversation_id: str
     role: str
     content: str | None = None

@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import re
-
 from app.configs.config import get_settings
 from app.database.repositories.product_repository import ProductRepository
 from app.models.product import Product
-from app.schemes.product_search import ProductSearchFilters
-
+from app.schemes.product import ProductSearchFilters
 
 
 class ProductService:
@@ -17,7 +14,6 @@ class ProductService:
         settings = get_settings()
 
         self.repository = repository or ProductRepository()
-        self.source_currency = settings.price_source_currency.upper()
         self.target_currency = settings.price_target_currency.upper()
         self.conversion_rate = settings.price_conversion_rate
 
@@ -30,16 +26,10 @@ class ProductService:
 
         return round(price * self.conversion_rate, 2)
 
-    def _convert_target_to_source(
+    def _normalize_product_prices(
         self,
-        price: float | None,
-    ) -> float | None:
-        if price is None or self.conversion_rate == 0:
-            return None
-
-        return round(price / self.conversion_rate, 2)
-
-    def _normalize_product_prices(self, product: Product) -> Product:
+        product: Product,
+    ) -> Product:
         return product.model_copy(
             update={
                 "price": self._convert_source_to_target(product.price),
@@ -47,29 +37,23 @@ class ProductService:
             }
         )
 
-    @staticmethod
-    def _tokenize(value: str) -> list[str]:
-        return [
-            token
-            for token in re.findall(r"[a-z0-9]+", value.lower())
-            if token
-        ]
+    def get_product_details(
+        self,
+        name: str,
+    ) -> Product | None:
+        name = name.strip()
 
-    def get_product_details(self, sku_or_name: str) -> Product | None:
-        identifier = sku_or_name.strip()
-
-        if not identifier:
+        if not name:
             return None
 
-        row = self.repository.get_by_product_code(identifier)
-
-        if row is None:
-            row = self.repository.get_by_name(identifier)
+        row = self.repository.get_by_name(name)
 
         if row is None:
             return None
 
-        return self._normalize_product_prices(Product.from_row(row))
+        return self._normalize_product_prices(
+            Product.from_row(row)
+        )
 
     def search_products(
         self,
@@ -80,17 +64,28 @@ class ProductService:
         rows = self.repository.search(filters)
 
         return [
-            self._normalize_product_prices(Product.from_row(row))
+            self._normalize_product_prices(
+                Product.from_row(row)
+            )
             for row in rows
         ]
 
-    def get_product_stock(self, sku_or_name: str) -> int | None:
-        product = self.get_product_details(sku_or_name)
-        return product.stock if product else None
+    def check_product_availability(
+        self,
+        name: str,
+    ) -> dict | None:
+        product = self.get_product_details(name)
 
-    def get_product_price(self, sku_or_name: str) -> float | None:
-        product = self.get_product_details(sku_or_name)
-        return product.price if product else None
+        if product is None:
+            return None
+
+        stock = product.stock or 0
+
+        return {
+            "product_name": product.name,
+            "available": stock > 0,
+            "stock": stock,
+        }
 
     def get_total_stock(
         self,

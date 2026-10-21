@@ -22,6 +22,7 @@ def test_create_conversation_and_persist_history(client, conversation_store):
     assert history["messages"][1]["role"] == "assistant"
     assert history["messages"][2]["role"] == "tool"
     assert history["messages"][-1]["role"] == "assistant"
+    assert isinstance(history["messages"][0]["id"], str)
 
 
 def test_follow_up_uses_previous_context(client, fake_openai_client):

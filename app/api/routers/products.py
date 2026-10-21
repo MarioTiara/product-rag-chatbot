@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.api.dependencies import get_product_service
 from app.models.product import Product
 from app.services.product_service import ProductService
-from app.schemes.product_search import ProductSearchFilters
+from app.schemes.product import ProductSearchFilters
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
