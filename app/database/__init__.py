@@ -1,1 +1,1 @@
-"""Application package for the product RAG chatbot."""
+"""database package for the product RAG chatbot."""

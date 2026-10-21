@@ -6,6 +6,8 @@ altair==6.3.0
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
+argon2-cffi==25.1.0
+argon2-cffi-bindings==26.1.0
 attrs==26.1.0
 bcrypt==5.0.0
 build==1.6.1
@@ -82,6 +84,7 @@ pytest==9.1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.4
 python-multipart==0.0.32
+python-telegram-bot==22.8
 PyYAML==6.0.3
 referencing==0.37.0
 requests==2.34.2
