@@ -6,64 +6,151 @@ from dataclasses import dataclass
 from pathlib import Path
 
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
+os.environ.setdefault("PRICE_CONVERSION_RATE", "190")
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.chatbot import ChatbotOrchestrator
-from app.conversation_store import ConversationStore
-from app.database import DatabaseService
-from app.dependencies import (
+from app.ai.chatbot_service import ChatbotOrchestrator
+from app.api.dependencies import (
     get_chatbot_orchestrator,
     get_conversation_store,
     get_product_service,
 )
+from app.api.routers.chat import router as chat_router  # noqa: F401
+from app.database.connection import DatabaseConnection
+from app.database.repositories.conversation_repository import ConversationRepository
+from app.database.repositories.product_repository import ProductRepository
 from app.main import app
-from app.product_service import ProductService
+from app.services.conversation_store import ConversationStore
+from app.services.product_service import ProductService
 
 
 TEST_PRODUCTS = [
     {
-        "sku": "ASUS-VIVO-8",
+        "id": "prod-asus-8",
+        "product_id": "P-001",
         "brand": "ASUS",
+        "model": "VivoBook 14",
+        "product_code": "ASUS-VIVO-8",
         "name": "ASUS VivoBook 14 X1404VA Laptop (14 Inch | Intel Core i5 | 8 GB | Windows 11 | 512 GB SSD)",
-        "category": "laptop",
+        "os": "Windows 11",
         "price": 1000.0,
         "processor_name": "Intel Core i5",
         "processor_brand": "Intel",
-        "ram_expandable": "Yes",
-        "ram": "8 GB",
+        "ram_expandable": 1,
+        "ram_gb": 8,
         "ram_type": "DDR4",
-        "ghz": "3.5 GHz",
+        "processor_ghz": 3.5,
         "display_type": "IPS",
-        "display": "14 Inch",
+        "display_inch": 14.0,
         "gpu": "Intel UHD",
         "gpu_brand": "Intel",
-        "ssd": "512 GB",
-        "hdd": None,
+        "ssd_gb": 512,
+        "hdd_gb": None,
         "stock": 3,
         "battery_life": "8 hours",
+        "tags": "vivo,asus",
     },
     {
-        "sku": "ASUS-VIVO-16",
+        "id": "prod-asus-16",
+        "product_id": "P-002",
         "brand": "ASUS",
+        "model": "VivoBook 14",
+        "product_code": "ASUS-VIVO-16",
         "name": "ASUS VivoBook 14 X1404VA Laptop (14 Inch | Intel Core i5 | 16 GB | Windows 11 | 512 GB SSD)",
-        "category": "laptop",
+        "os": "Windows 11",
         "price": 1200.0,
         "processor_name": "Intel Core i5",
         "processor_brand": "Intel",
-        "ram_expandable": "Yes",
-        "ram": "16 GB",
+        "ram_expandable": 1,
+        "ram_gb": 16,
         "ram_type": "DDR4",
-        "ghz": "3.5 GHz",
+        "processor_ghz": 3.5,
         "display_type": "IPS",
-        "display": "14 Inch",
+        "display_inch": 14.0,
         "gpu": "Intel UHD",
         "gpu_brand": "Intel",
-        "ssd": "512 GB",
-        "hdd": None,
+        "ssd_gb": 512,
+        "hdd_gb": None,
         "stock": 5,
         "battery_life": "8 hours",
+        "tags": "vivo,asus",
+    },
+    {
+        "id": "prod-i7-8",
+        "product_id": "P-003",
+        "brand": "Dell",
+        "model": "Inspiron 14",
+        "product_code": "DELL-I7-8",
+        "name": "Dell Inspiron 14 Laptop (14 Inch | Intel Core i7 | 8 GB | Windows 11 | 512 GB SSD)",
+        "os": "Windows 11",
+        "price": 800.0,
+        "processor_name": "Intel Core i7 (11th Gen)",
+        "processor_brand": "Intel",
+        "ram_expandable": 1,
+        "ram_gb": 8,
+        "ram_type": "DDR4",
+        "processor_ghz": 4.2,
+        "display_type": "IPS",
+        "display_inch": 14.0,
+        "gpu": "Intel Iris Xe",
+        "gpu_brand": "Intel",
+        "ssd_gb": 512,
+        "hdd_gb": None,
+        "stock": 4,
+        "battery_life": "10 hours",
+        "tags": "dell,inspiron",
+    },
+    {
+        "id": "prod-i7-16",
+        "product_id": "P-004",
+        "brand": "Dell",
+        "model": "Inspiron 14",
+        "product_code": "DELL-I7-16",
+        "name": "Dell Inspiron 14 Laptop (14 Inch | Intel Core i7 | 16 GB | Windows 11 | 512 GB SSD)",
+        "os": "Windows 11",
+        "price": 1000.0,
+        "processor_name": "Intel Core i7 (11th Gen)",
+        "processor_brand": "Intel",
+        "ram_expandable": 1,
+        "ram_gb": 16,
+        "ram_type": "DDR4",
+        "processor_ghz": 4.2,
+        "display_type": "IPS",
+        "display_inch": 14.0,
+        "gpu": "Intel Iris Xe",
+        "gpu_brand": "Intel",
+        "ssd_gb": 512,
+        "hdd_gb": None,
+        "stock": 3,
+        "battery_life": "10 hours",
+        "tags": "dell,inspiron",
+    },
+    {
+        "id": "prod-i9-16",
+        "product_id": "P-005",
+        "brand": "HP",
+        "model": "Pavilion 14",
+        "product_code": "HP-I9-16",
+        "name": "HP Pavilion 14 Laptop (14 Inch | Intel Core i9 | 16 GB | Windows 11 | 1 TB SSD)",
+        "os": "Windows 11",
+        "price": 900.0,
+        "processor_name": "Intel Core i9 (12th Gen)",
+        "processor_brand": "Intel",
+        "ram_expandable": 0,
+        "ram_gb": 16,
+        "ram_type": "DDR4",
+        "processor_ghz": 4.8,
+        "display_type": "IPS",
+        "display_inch": 14.0,
+        "gpu": "Intel Iris Xe",
+        "gpu_brand": "Intel",
+        "ssd_gb": 1024,
+        "hdd_gb": None,
+        "stock": 2,
+        "battery_life": "9 hours",
+        "tags": "hp,pavilion",
     },
 ]
 
@@ -135,9 +222,7 @@ class FakeChatCompletions:
                                         type="function",
                                         function=FakeToolFunction(
                                             name="search_products",
-                                            arguments=json.dumps(
-                                                {"query": "ASUS VivoBook 14", "limit": 5}
-                                            ),
+                                            arguments=json.dumps({"query": "ASUS VivoBook 14", "limit": 5}),
                                         ),
                                     )
                                 ],
@@ -179,9 +264,7 @@ class FakeChatCompletions:
                                         type="function",
                                         function=FakeToolFunction(
                                             name="search_products",
-                                            arguments=json.dumps(
-                                                {"query": "ASUS VivoBook 14 8 GB", "limit": 5}
-                                            ),
+                                            arguments=json.dumps({"query": "ASUS VivoBook 14", "ram_gb": 8, "limit": 5}),
                                         ),
                                     )
                                 ],
@@ -197,6 +280,98 @@ class FakeChatCompletions:
                     FakeChoice(
                         message=FakeMessage(
                             content="The 8 GB ASUS VivoBook 14 version is the one you discussed earlier.",
+                            tool_calls=None,
+                        ),
+                        finish_reason="stop",
+                    )
+                ],
+            )
+
+        if current_user == "Carikan saya pilihan laptop termurah dengan spesifikasi minimal Intel Core i7 dan RAM 16 GB.":
+            if not has_tool_after_current_user:
+                return FakeResponse(
+                    id=f"resp-{self._counter}",
+                    choices=[
+                        FakeChoice(
+                            message=FakeMessage(
+                                content=None,
+                                tool_calls=[
+                                    FakeToolCall(
+                                        id="call-cheapest-i7",
+                                        type="function",
+                                        function=FakeToolFunction(
+                                            name="search_products",
+                                            arguments=json.dumps(
+                                                {
+                                                    "processor_name": "Intel Core i7",
+                                                    "processor_brand": "Intel",
+                                                    "min_ram": 16,
+                                                    "sort_by": "price",
+                                                    "sort_order": "asc",
+                                                    "limit": 5,
+                                                }
+                                            ),
+                                        ),
+                                    )
+                                ],
+                            ),
+                            finish_reason="tool_calls",
+                        )
+                    ],
+                )
+
+            return FakeResponse(
+                id=f"resp-{self._counter}",
+                choices=[
+                    FakeChoice(
+                        message=FakeMessage(
+                            content="Maaf, saat ini tidak tersedia produk yang cocok.",
+                            tool_calls=None,
+                        ),
+                        finish_reason="stop",
+                    )
+                ],
+            )
+
+        if current_user == "Carikan laptop dengan Intel Core i7 dan RAM 64 GB.":
+            if not has_tool_after_current_user:
+                return FakeResponse(
+                    id=f"resp-{self._counter}",
+                    choices=[
+                        FakeChoice(
+                            message=FakeMessage(
+                                content=None,
+                                tool_calls=[
+                                    FakeToolCall(
+                                        id="call-empty-i7",
+                                        type="function",
+                                        function=FakeToolFunction(
+                                            name="search_products",
+                                            arguments=json.dumps(
+                                                {
+                                                    "processor_name": "Intel Core i7",
+                                                    "processor_brand": "Intel",
+                                                    "min_ram": 64,
+                                                    "sort_by": "price",
+                                                    "sort_order": "asc",
+                                                    "limit": 5,
+                                                }
+                                            ),
+                                        ),
+                                    )
+                                ],
+                            ),
+                            finish_reason="tool_calls",
+                        )
+                    ],
+                )
+
+            return FakeResponse(
+                id=f"resp-{self._counter}",
+                choices=[
+                    FakeChoice(
+                        message=FakeMessage(
+                            content="Maaf, saat ini tidak tersedia produk yang cocok.",
                             tool_calls=None,
                         ),
                         finish_reason="stop",
@@ -221,40 +396,100 @@ class FakeOpenAIClient:
         self.chat.completions = FakeChatCompletions()
 
 
-@pytest.fixture()
-def db_service(tmp_path: Path) -> DatabaseService:
-    service = DatabaseService(tmp_path / "test.sqlite3")
-    service.initialize()
+def _create_schema(connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS products (
+            id TEXT PRIMARY KEY,
+            product_id TEXT,
+            brand TEXT NOT NULL,
+            model TEXT,
+            product_code TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            os TEXT,
+            price REAL,
+            processor_name TEXT,
+            processor_brand TEXT,
+            ram_expandable INTEGER NOT NULL DEFAULT 0,
+            ram_gb INTEGER,
+            ram_type TEXT,
+            processor_ghz REAL,
+            display_type TEXT,
+            display_inch REAL,
+            gpu TEXT,
+            gpu_brand TEXT,
+            ssd_gb INTEGER,
+            hdd_gb INTEGER,
+            stock INTEGER NOT NULL DEFAULT 0,
+            battery_life TEXT,
+            tags TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
 
-    with service.connection() as connection:
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS conversations (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS conversation_messages (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT,
+            tool_calls_json TEXT,
+            tool_call_id TEXT,
+            tool_name TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+
+@pytest.fixture()
+def db_service(tmp_path: Path) -> DatabaseConnection:
+    db = DatabaseConnection(tmp_path / "test.sqlite3")
+    with db.connect() as connection:
+        _create_schema(connection)
         for product in TEST_PRODUCTS:
             connection.execute(
                 """
                 INSERT INTO products (
-                    sku, brand, name, category, price, processor_name, processor_brand,
-                    ram_expandable, ram, ram_type, ghz, display_type, display,
-                    gpu, gpu_brand, ssd, hdd, stock, battery_life
+                    id, product_id, brand, model, product_code, name, os, price,
+                    processor_name, processor_brand, ram_expandable, ram_gb,
+                    ram_type, processor_ghz, display_type, display_inch, gpu,
+                    gpu_brand, ssd_gb, hdd_gb, stock, battery_life, tags
                 ) VALUES (
-                    :sku, :brand, :name, :category, :price, :processor_name, :processor_brand,
-                    :ram_expandable, :ram, :ram_type, :ghz, :display_type, :display,
-                    :gpu, :gpu_brand, :ssd, :hdd, :stock, :battery_life
+                    :id, :product_id, :brand, :model, :product_code, :name, :os, :price,
+                    :processor_name, :processor_brand, :ram_expandable, :ram_gb,
+                    :ram_type, :processor_ghz, :display_type, :display_inch, :gpu,
+                    :gpu_brand, :ssd_gb, :hdd_gb, :stock, :battery_life, :tags
                 )
                 """,
                 product,
             )
-        connection.commit()
-
-    return service
+    return db
 
 
 @pytest.fixture()
-def product_service(db_service: DatabaseService) -> ProductService:
-    return ProductService(database=db_service)
+def product_service(db_service: DatabaseConnection) -> ProductService:
+    return ProductService(ProductRepository(db_service))
 
 
 @pytest.fixture()
-def conversation_store(db_service: DatabaseService) -> ConversationStore:
-    return ConversationStore(database=db_service)
+def conversation_store(db_service: DatabaseConnection) -> ConversationStore:
+    return ConversationStore(ConversationRepository(db_service))
 
 
 @pytest.fixture()

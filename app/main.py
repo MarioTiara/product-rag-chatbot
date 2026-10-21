@@ -3,9 +3,10 @@ import logging
 
 from fastapi import FastAPI
 
-from app.config import get_settings
-from app.logging_config import configure_logging
-from app.routers import chat, health, products
+from app.api.routers import  health, products, chat, auth
+from app.configs.config import get_settings
+from app.configs.logging_config import configure_logging
+
 
 
 settings = get_settings()
@@ -26,3 +27,4 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(products.router)
+app.include_router(auth.router)
