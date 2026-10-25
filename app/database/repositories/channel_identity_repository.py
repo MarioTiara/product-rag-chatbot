@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.database.connection import DatabaseConnection
-
+from app.constants.constant import VALID_CHANNELS
 
 class ChannelIdentityRepository:
-    VALID_CHANNELS = {"telegram", "whatsapp", "web"}
-
     def __init__(
         self,
         database: DatabaseConnection | None = None,
@@ -21,7 +19,7 @@ class ChannelIdentityRepository:
         channel: str,
         channel_user_id: str,
     ) -> dict[str, Any]:
-        if channel not in self.VALID_CHANNELS:
+        if channel not in VALID_CHANNELS:
             raise ValueError("Unsupported channel")
 
         with self.database.connect() as connection:
@@ -70,7 +68,7 @@ class ChannelIdentityRepository:
         channel: str,
         channel_user_id: str,
     ) -> dict[str, Any] | None:
-        if channel not in self.VALID_CHANNELS:
+        if channel not in VALID_CHANNELS:
             raise ValueError("Unsupported channel")
 
         with self.database.connect() as connection:

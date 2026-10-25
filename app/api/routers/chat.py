@@ -9,6 +9,8 @@ from app.ai.chatbot_orchestrator import (
     ChatProviderAuthenticationError,
     ChatbotOrchestrator,
 )
+
+from app.exceptions.exception import ConversationNotFoundError
 from app.api.dependencies import (
     get_chatbot_orchestrator,
     get_conversation_service,
@@ -17,7 +19,7 @@ from app.api.dependencies import (
 from app.schemes.chat import ChatRequest, ChatResponse
 from app.schemes.conversation import ConversationHistoryResponse
 from app.services.conversation_service import ConversationService
-from app.services.conversation_store import ConversationNotFoundError
+
 
 
 logger = logging.getLogger(__name__)
