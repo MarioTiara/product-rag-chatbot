@@ -6,7 +6,7 @@ CREATE TABLE products (
     product_code VARCHAR(100) NOT NULL UNIQUE,
     name VARCHAR(500) NOT NULL,
     os VARCHAR(100),
-    usd_price REAL,
+    price REAL,
     processor_name VARCHAR(255),
     processor_brand VARCHAR(100),
     ram_expandable INTEGER NOT NULL DEFAULT 0,

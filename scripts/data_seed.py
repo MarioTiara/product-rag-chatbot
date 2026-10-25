@@ -8,7 +8,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Iterator
 
-from app.database.connection import DEFAULT_DB_PATH, DatabaseConnection
+from app.database.connection import DatabaseConnection
+from app.configs import config
 from app.database.repositories.product_repository import ProductRepository
 
 
@@ -16,7 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CSV_PATH = PROJECT_ROOT / "data" / "product.csv"
 
 logger = logging.getLogger(__name__)
-
+settings= config.get_settings()
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -31,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--db-path",
         type=Path,
-        default=DEFAULT_DB_PATH,
+        default=s,
         help="Path to the SQLite database file.",
     )
     parser.add_argument(
@@ -71,7 +72,7 @@ def iter_batches(
 
 def seed_products(
     csv_path: str | Path = DEFAULT_CSV_PATH,
-    db_path: str | Path = DEFAULT_DB_PATH,
+    db_path: str | Path = settings.database_path,
     batch_size: int = 500,
     stop_on_error: bool = False,
 ) -> dict[str, Any]:
@@ -244,7 +245,7 @@ def normalize_product(row: dict[str, str | None]) -> dict[str, Any]:
         "product_code": product_code,
         "name": name,
         "os": (row.get("OS") or "").strip() or None,
-        "usd_price": parse_float(row.get("USD_Price")),
+        "price": parse_float(row.get("USD_Price")),
         "processor_name": (row.get("Processor_Name") or "").strip() or None,
         "processor_brand": (row.get("Processor_Brand") or "").strip() or None,
         "ram_expandable": parse_int(row.get("RAM_Expandable")) or 0,

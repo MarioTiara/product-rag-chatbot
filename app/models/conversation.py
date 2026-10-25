@@ -4,10 +4,12 @@ from __future__ import annotations
 from typing import Any
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class Conversation(BaseModel):
-    conversation_id: str
+    model_config = ConfigDict(populate_by_name=True)
+
+    conversation_id: str = Field(alias="id")
     title:str | None= None 
     created_at: str
     updated_at: str

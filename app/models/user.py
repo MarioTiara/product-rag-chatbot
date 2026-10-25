@@ -3,8 +3,9 @@ from pydantic import BaseModel, ConfigDict
 
 class User(BaseModel):
     id: str
-    username: str
-    hashed_password: str
-    is_active: bool = True
+    display_name: str | None = None
+    email: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
     model_config = ConfigDict(frozen=True)

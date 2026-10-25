@@ -6,17 +6,18 @@ import logging
 import sqlite3
 from pathlib import Path
 
-from app.database.connection import DEFAULT_DB_PATH
 
 
+from app.configs.config import get_settings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS_DIR = PROJECT_ROOT / "app" / "database" / "migrations"
 
 logger = logging.getLogger(__name__)
 
+settings= get_settings()
 
 def run_migrations(
-    db_path: str | Path = DEFAULT_DB_PATH,
+    db_path: str | Path = settings.database_path,
 ) -> None:
     """Apply pending SQL migrations to the SQLite database."""
     db_path = Path(db_path)
@@ -130,7 +131,7 @@ def main() -> None:
     parser.add_argument(
         "--db-path",
         type=Path,
-        default=DEFAULT_DB_PATH,
+        default=settings.database_path,
         help="Path to the SQLite database file.",
     )
 

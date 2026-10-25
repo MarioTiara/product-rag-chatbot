@@ -15,6 +15,8 @@ from app.ai.chatbot_service import ChatbotOrchestrator
 from app.api.dependencies import (
     get_chatbot_orchestrator,
     get_conversation_store,
+    get_conversation_service,
+    get_current_user,
     get_product_service,
 )
 from app.api.routers.chat import router as chat_router  # noqa: F401
@@ -521,7 +523,9 @@ def client(
 ):
     app.dependency_overrides[get_product_service] = lambda: product_service
     app.dependency_overrides[get_conversation_store] = lambda: conversation_store
+    app.dependency_overrides[get_conversation_service] = lambda: conversation_store
     app.dependency_overrides[get_chatbot_orchestrator] = lambda: chatbot_orchestrator
+    app.dependency_overrides[get_current_user] = lambda: {"id": "test-user-001"}
 
     with TestClient(app) as test_client:
         yield test_client
