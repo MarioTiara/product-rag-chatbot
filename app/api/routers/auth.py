@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -9,7 +8,11 @@ from app.services.authentication_service import (
     AuthenticationService,
 )
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+router = APIRouter(
+    prefix="/auth",
+    tags=["Authentication"],
+)
 
 
 class TokenResponse(BaseModel):
@@ -21,19 +24,21 @@ class TokenResponse(BaseModel):
 def login(
     form: OAuth2PasswordRequestForm = Depends(),
     service: AuthenticationService = Depends(
-        get_authentication_service 
+        get_authentication_service
     ),
 ) -> TokenResponse:
     try:
         _, access_token = service.login(
-            username=form.username,
+            email=form.username,
             password=form.password,
         )
     except AuthenticationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
 
-    return TokenResponse(access_token=access_token)
+    return TokenResponse(
+        access_token=access_token,
+    )

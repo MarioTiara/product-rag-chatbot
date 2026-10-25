@@ -5,6 +5,7 @@ from telegram.ext import Application
 from bots.telegram.api_client import ProductApiClient
 from bots.telegram.config import TelegramBotConfig
 from bots.telegram.handlers import register_handlers
+from bots.telegram.logging_config import setup_logging
 
 
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +27,7 @@ async def post_shutdown(application: Application) -> None:
 
 def main() -> None:
     config = TelegramBotConfig.from_env()
-
+    setup_logging(log_filename="telegram_bot.log")
     application = (
         Application.builder()
         .token(config.token)

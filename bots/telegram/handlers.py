@@ -1,4 +1,3 @@
-
 import logging
 
 from telegram import Update
@@ -15,6 +14,9 @@ from bots.telegram.api_client import ProductApiClient
 
 
 logger = logging.getLogger(__name__)
+
+TELEGRAM_CHANNEL = "telegram"
+TELEGRAM_MAX_MESSAGE_LENGTH = 4000
 
 
 async def start(
@@ -55,23 +57,33 @@ async def handle_message(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    if update.message is None or not update.message.text:
+    message = update.message
+
+    if message is None or not message.text:
         return
 
-    api_client: ProductApiClient = (
-        context.application.bot_data["api"]
-    )
+    chat = update.effective_chat
+    user = update.effective_user
 
-    user_message = update.message.text
+    if chat is None or user is None:
+        logger.warning(
+            "Cannot process Telegram message without chat/user information"
+        )
+        return
+
+    api_client: ProductApiClient = context.application.bot_data["api"]
 
     payload = {
-        "message": user_message,
+        "message": message.text,
+        "channel": TELEGRAM_CHANNEL,
+        "channel_chat_id": str(chat.id),
+        "channel_thread_id": str(message.message_thread_id or ""),
+        "channel_user_id": str(user.id),
+        "channel_message_id": str(message.message_id),
     }
 
     try:
-        await update.message.chat.send_action(
-            ChatAction.TYPING
-        )
+        await message.chat.send_action(ChatAction.TYPING)
 
         result = await api_client.post(
             "/chat",
@@ -83,20 +95,57 @@ async def handle_message(
         if not isinstance(answer, str) or not answer.strip():
             answer = "Sorry, I couldn't generate an answer."
 
-        # Split long responses to stay within Telegram's message limit.
-        max_length = 4000
+        assistant_message_id = result.get("assistant_message_id")
+        channel_conversation_id = result.get("channel_conversation_id")
 
-        for start_index in range(0, len(answer), max_length):
-            await update.message.reply_text(
-                answer[start_index:start_index + max_length]
-            )
+        # Split long responses into Telegram-sized messages.
+        chunks = [
+            answer[index:index + TELEGRAM_MAX_MESSAGE_LENGTH]
+            for index in range(0, len(answer), TELEGRAM_MAX_MESSAGE_LENGTH)
+        ]
+
+        for chunk in chunks:
+            sent_message = await message.reply_text(chunk)
+
+            # Save the external Telegram message ID only after sending succeeds.
+            if assistant_message_id and channel_conversation_id is not None:
+                try:
+                    await api_client.post(
+                        "/channel-messages/delivery",
+                        json={
+                            "internal_message_id": assistant_message_id,
+                            "channel_conversation_id": channel_conversation_id,
+                            "channel_message_id": str(sent_message.message_id),
+                            "channel": TELEGRAM_CHANNEL,
+                            "delivery_status": "sent",
+                        },
+                    )
+                except Exception:
+                    # The Telegram reply was already sent.
+                    # Log the mapping failure without sending a duplicate reply.
+                    logger.exception(
+                        "Telegram reply sent, but delivery mapping failed: "
+                        "chat_id=%s, telegram_message_id=%s, "
+                        "assistant_message_id=%s",
+                        chat.id,
+                        sent_message.message_id,
+                        assistant_message_id,
+                    )
+
+            elif not assistant_message_id or channel_conversation_id is None:
+                logger.warning(
+                    "Cannot save Telegram delivery mapping: "
+                    "assistant_message_id or channel_conversation_id is missing"
+                )
 
     except Exception:
         logger.exception(
-            "Failed to process Telegram message"
+            "Failed to process Telegram message: chat_id=%s, user_id=%s",
+            chat.id,
+            user.id,
         )
 
-        await update.message.reply_text(
+        await message.reply_text(
             "Sorry, I couldn't process your request. "
             "Please try again later."
         )
@@ -112,16 +161,9 @@ async def error_handler(
     )
 
 
-def register_handlers(
-    application: Application,
-) -> None:
-    application.add_handler(
-        CommandHandler("start", start)
-    )
-
-    application.add_handler(
-        CommandHandler("help", help_command)
-    )
+def register_handlers(application: Application) -> None:
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
 
     application.add_handler(
         MessageHandler(

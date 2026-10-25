@@ -1,17 +1,16 @@
 from functools import lru_cache
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
-from fastapi import status
 
-from app.ai.chatbot_service import ChatbotOrchestrator
+from app.ai.chatbot_orchestrator import ChatbotOrchestrator
 from app.configs import config
 from app.database.connection import DatabaseConnection
 from app.database.repositories.product_repository import ProductRepository
 from app.models.user import User
 from app.services.authentication_service import AuthenticationService
-from app.services.conversation_store import ConversationStore
+from app.services.conversation_service import ConversationService
 from app.services.product_service import ProductService
 from app.utils.security import decode_access_token
 
@@ -52,22 +51,27 @@ def get_current_user(
 @lru_cache(maxsize=1)
 def get_product_service() -> ProductService:
     settings = config.get_settings()
-    db = DatabaseConnection(settings.database_path)
-    repository = ProductRepository(db)
+    database = DatabaseConnection(settings.database_path)
+    repository = ProductRepository(database)
 
     return ProductService(repository)
 
 
 @lru_cache(maxsize=1)
-def get_conversation_store() -> ConversationStore:
-    return ConversationStore()
+def get_conversation_service() -> ConversationService:
+    return ConversationService()
+
+
+def get_conversation_store() -> ConversationService:
+    """Backward-compatible alias for older imports/tests."""
+    return get_conversation_service()
 
 
 @lru_cache(maxsize=1)
 def get_chatbot_orchestrator() -> ChatbotOrchestrator:
     return ChatbotOrchestrator(
         product_service=get_product_service(),
-        conversation_store=get_conversation_store(),
+        conversation_service=get_conversation_service(),
     )
 
 

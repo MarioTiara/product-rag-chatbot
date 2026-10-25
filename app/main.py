@@ -3,7 +3,7 @@ import logging
 
 from fastapi import FastAPI
 
-from app.api.routers import  health, products, chat, auth
+from app.api.routers import  health, products, chat, auth, channel_message
 from app.configs.config import get_settings
 from app.configs.logging_config import configure_logging
 
@@ -28,3 +28,4 @@ app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(products.router)
 app.include_router(auth.router)
+app.include_router(channel_message.router)

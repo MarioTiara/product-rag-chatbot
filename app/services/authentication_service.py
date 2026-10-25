@@ -1,7 +1,8 @@
-
 from app.configs.config import get_settings
-from app.utils.security import create_access_token, verify_password
+from app.database.connection import DatabaseConnection
+from app.database.repositories.user_repository import UserRepository
 from app.models.user import User
+from app.utils.security import create_access_token, verify_password
 
 
 class AuthenticationError(Exception):
@@ -9,42 +10,49 @@ class AuthenticationError(Exception):
 
 
 class AuthenticationService:
-    def __init__(self) -> None:
-        settings = get_settings()
+    def __init__(
+        self,
+        user_repository: UserRepository | None = None,
+    ) -> None:
+        if user_repository is None:
+            settings = get_settings()
+            database = DatabaseConnection(settings.database_path)
+            user_repository = UserRepository(database)
 
-        self._dev_user = User(
-            id=settings.dev_user_id,
-            username=settings.dev_username,
-            hashed_password=(
-                settings.dev_password_hash.get_secret_value()
-            ),
-            is_active=settings.dev_user_active,
-        )
+        self.users = user_repository
 
     def authenticate(
         self,
-        username: str,
+        email: str,
         password: str,
     ) -> User:
-        user = self._dev_user
+        user_data = self.users.get_by_email(email)
 
-        if (
-            username != user.username
-            or not verify_password(password, user.hashed_password)
-            or not user.is_active
-        ):
+        if user_data is None:
             raise AuthenticationError(
-                "Invalid username or password"
+                "Invalid email or password"
             )
 
-        return user
+        password_hash = self.users.get_password_hash_by_email(
+            email
+        )
+
+        if (
+            password_hash is None
+            or not verify_password(password, password_hash)
+        ):
+            raise AuthenticationError(
+                "Invalid email or password"
+            )
+
+        return User(**user_data)
 
     def login(
         self,
-        username: str,
+        email: str,
         password: str,
     ) -> tuple[User, str]:
-        user = self.authenticate(username, password)
+        user = self.authenticate(email, password)
 
         access_token = create_access_token(
             subject=user.id,
@@ -52,10 +60,13 @@ class AuthenticationService:
 
         return user, access_token
 
-    def get_user_by_id(self, user_id: str) -> User | None:
-        user = self._dev_user
+    def get_user_by_id(
+        self,
+        user_id: str,
+    ) -> User | None:
+        user_data = self.users.get_by_id(user_id)
 
-        if user.id != user_id or not user.is_active:
+        if user_data is None:
             return None
 
-        return user
+        return User(**user_data)

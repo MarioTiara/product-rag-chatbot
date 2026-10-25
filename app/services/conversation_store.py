@@ -19,19 +19,23 @@ class ConversationStore:
     ) -> None:
         self.repository = repository or ConversationRepository()
 
+    @property
+    def conversations(self) -> ConversationStore:
+        """Backward-compatible self-reference used by older code paths."""
+        return self
+
     def create_conversation(
         self,
         title: str | None = None,
+        user_id: str | None = None,
     ) -> Conversation:
-        return self.repository.create(title=title)
+        return self.repository.create_conversation(
+            user_id=user_id,
+            title=title,
+        )
 
     def get_conversation(self, conversation_id: str) -> Conversation:
-        conversation = self.repository.get_by_id(conversation_id)
-
-        if conversation is None:
-            raise ConversationNotFoundError(conversation_id)
-
-        return conversation
+        return self.repository.get_conversation(conversation_id)
 
     def conversation_exists(self, conversation_id: str) -> bool:
         return self.repository.exists(conversation_id)
@@ -68,6 +72,93 @@ class ConversationStore:
             message_id=message_id,
         )
 
+    def create_message(
+        self,
+        conversation_id: str,
+        role: str,
+        content: str | None = None,
+        *,
+        tool_calls_json: str | None = None,
+        tool_call_id: str | None = None,
+        tool_name: str | None = None,
+    ) -> ConversationMessage:
+        tool_calls = (
+            json.loads(tool_calls_json)
+            if tool_calls_json
+            else None
+        )
+
+        return self.add_message(
+            conversation_id=conversation_id,
+            role=role,
+            content=content,
+            tool_calls=tool_calls,
+            tool_call_id=tool_call_id,
+            tool_name=tool_name,
+        )
+
+    def get_history(
+        self,
+        conversation_id: str,
+        limit: int | None = None,
+    ) -> list[ConversationMessage]:
+        return self.get_messages(conversation_id=conversation_id, limit=limit)
+
+    def prepare_message(
+        self,
+        *,
+        message: str,
+        channel: str | None = None,
+        channel_chat_id: str | None = None,
+        channel_thread_id: str = "",
+        channel_user_id: str | None = None,
+        conversation_id: str | None = None,
+        user_id: str | None = None,
+    ) -> dict[str, Any]:
+        if channel is not None:
+            raise ValueError("Channel conversations are not supported here")
+
+        if conversation_id is None:
+            conversation = self.create_conversation(
+                title=message[:80],
+                user_id=user_id,
+            )
+            conversation_id = conversation["id"]
+        else:
+            conversation = self.get_conversation(conversation_id)
+
+            if conversation is None:
+                raise ConversationNotFoundError(conversation_id)
+
+        history = self.get_history(conversation_id=conversation_id, limit=12)
+        user_message = self.create_message(
+            conversation_id=conversation_id,
+            role="user",
+            content=message,
+        )
+
+        return {
+            "conversation_id": conversation_id,
+            "channel_conversation_id": None,
+            "user_message_id": user_message.id,
+            "history": history,
+            "conversation": conversation,
+        }
+
+    def save_assistant_message(
+        self,
+        *,
+        conversation_id: str,
+        content: str,
+        tool_calls_json: str | None = None,
+    ) -> ConversationMessage:
+        return self.create_message(
+            conversation_id=conversation_id,
+            role="assistant",
+            content=content,
+            tool_calls_json=tool_calls_json,
+        )
+
     def add_messages(
         self,
         conversation_id: str,
@@ -88,12 +179,9 @@ class ConversationStore:
         conversation_id: str,
         message_id: str,
     ) -> ConversationMessage:
-        row = self.repository.get_message_by_id(
-            conversation_id=conversation_id,
-            message_id=message_id,
-        )
+        row = self.repository.get_message(message_id)
 
-        if row is None:
+        if row is None or row.get("conversation_id") != conversation_id:
             raise ConversationNotFoundError(
                 f"Message '{message_id}' not found in conversation '{conversation_id}'."
             )
@@ -107,12 +195,15 @@ class ConversationStore:
     ) -> list[ConversationMessage]:
         self._ensure_conversation_exists(conversation_id)
 
-        rows = self.repository.get_messages(conversation_id)
+        rows = self.repository.get_history(
+            conversation_id=conversation_id,
+            limit=limit or 12,
+        )
 
         return self._normalize_message_window(rows, limit)
 
     def _ensure_conversation_exists(self, conversation_id: str) -> None:
-        if not self.repository.exists(conversation_id):
+        if self.repository.get_conversation(conversation_id) is None:
             raise ConversationNotFoundError(conversation_id)
 
     @staticmethod
