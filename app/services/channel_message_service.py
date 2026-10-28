@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.constants.constant import (
+from app.core.constants.constant import (
     VALID_DELIVERY_STATUSES,
     VALID_MESSAGE_TYPES,
 )

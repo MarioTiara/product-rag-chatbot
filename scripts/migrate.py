@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 
-from app.configs.config import get_settings
+from app.core.configs.config import get_settings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS_DIR = PROJECT_ROOT / "app" / "database" / "migrations"
 

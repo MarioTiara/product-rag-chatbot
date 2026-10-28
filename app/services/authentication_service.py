@@ -1,4 +1,4 @@
-from app.configs.config import get_settings
+from app.core.configs.config import get_settings
 from app.database.connection import DatabaseConnection
 from app.database.repositories.user_repository import UserRepository
 from app.models.user import User

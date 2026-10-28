@@ -13,7 +13,7 @@ from app.agents.chatbot_orchestrator import ChatbotOrchestrator
 from app.agents.tools.tool_call_handler import ToolCallHandler
 from app.agents.tools.tool_history_validator import ToolHistoryValidator
 from app.agents.utils.message_mapper import MessageMapper
-from app.configs import config
+from app.core.configs import config
 from app.database.connection import DatabaseConnection
 from app.database.repositories.product_repository import ProductRepository
 from app.models.user import User

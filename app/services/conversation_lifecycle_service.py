@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.constants.constant import VALID_CHANNELS
+from app.core.constants.constant import VALID_CHANNELS
 from app.database.repositories.conversation_repository import (
     ConversationRepository,
 )

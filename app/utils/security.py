@@ -1,6 +1,6 @@
 
 from datetime import datetime, timedelta, timezone
-from app.configs import config
+from app.core.configs import config
 import jwt
 from pwdlib import PasswordHash
 
