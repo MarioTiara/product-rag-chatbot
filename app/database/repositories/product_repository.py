@@ -306,7 +306,10 @@ class ProductRepository:
             else ""
         )
 
-        order_sql = self._build_order_by(filters.sort_by, filters.sort_order,)
+        order_sql = self._build_order_by(
+            filters.sort_by,
+            filters.sort_order,
+        )
 
         query = f"""
             SELECT *
@@ -317,6 +320,13 @@ class ProductRepository:
         """
 
         params.append(filters.limit)
+
+        # Log final SQL and parameters
+        self._log_query(
+            operation="search",
+            query=query,
+            params=params,
+        )
 
         with self.db.connect() as connection:
             rows = connection.execute(query, params).fetchall()
@@ -502,3 +512,16 @@ class ProductRepository:
             connection.executemany(query, params)
 
         return len(params)
+    
+    def _log_query(
+        self,
+        operation: str,
+        query: str,
+        params: tuple[Any, ...] | list[Any] = (),
+    ) -> None:
+        logger.info(
+            "Database query | operation=%s | SQL: %s | Parameters: %s",
+            operation,
+            " ".join(query.split()),
+            params,
+        )

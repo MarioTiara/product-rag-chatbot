@@ -11,7 +11,7 @@ os.environ.setdefault("PRICE_CONVERSION_RATE", "190")
 import pytest
 from fastapi.testclient import TestClient
 
-from app.ai.chatbot_service import ChatbotOrchestrator
+from app.agents.chatbot_service import ChatbotOrchestrator
 from app.api.dependencies import (
     get_chatbot_orchestrator,
     get_conversation_store,

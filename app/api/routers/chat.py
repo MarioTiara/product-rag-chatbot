@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.ai.chatbot_orchestrator import (
-    ChatProviderAuthenticationError,
-    ChatbotOrchestrator,
-)
+from app.agents.chatbot_orchestrator import ChatbotOrchestrator
+from app.agents.utils.exceptions import     ChatProviderAuthenticationError
 
 from app.exceptions.exception import ConversationNotFoundError
 from app.api.dependencies import (
@@ -54,13 +53,22 @@ def chat(
     current_user: Any = Depends(get_current_user),
     orchestrator: ChatbotOrchestrator = Depends(get_chatbot_orchestrator),
 ) -> ChatResponse:
-    try:
-        user_id = _get_user_id(current_user)
+    request_id = str(uuid.uuid4())
+    user_id = _get_user_id(current_user)
+    channel = payload.channel or "web"
 
+    try:
         logger.info(
-            "Received chat request: user_id=%s, channel=%s",
+            "Incoming chat request | request_id=%s | conversation_id=%s | user_id=%s | channel=%s | channel_chat_id=%s | channel_thread_id=%s | channel_user_id=%s | channel_message_id=%s | message=%r",
+            request_id,
+            payload.conversation_id,
             user_id,
-            payload.channel or "web",
+            channel,
+            payload.channel_chat_id,
+            payload.channel_thread_id,
+            payload.channel_user_id,
+            payload.channel_message_id,
+            " ".join(payload.message.split()),
         )
 
         result = orchestrator.chat(
@@ -71,12 +79,18 @@ def chat(
             channel_chat_id=payload.channel_chat_id,
             channel_thread_id=payload.channel_thread_id,
             channel_user_id=payload.channel_user_id,
-            channel_message_id=payload.channel_message_id
-        
+            channel_message_id=payload.channel_message_id,
+            request_id=request_id
         )
 
     except ConversationNotFoundError as exc:
-        logger.warning("Conversation not found: %s", exc)
+        logger.warning(
+            "Conversation not found | request_id=%s | user_id=%s | conversation_id=%s | error=%s",
+            request_id,
+            user_id,
+            payload.conversation_id,
+            exc,
+        )
         raise HTTPException(
             status_code=404,
             detail="Conversation not found",
@@ -86,30 +100,49 @@ def chat(
         raise
 
     except ValueError as exc:
-        logger.warning("Invalid chat request: %s", exc)
+        logger.warning(
+            "Invalid chat request | request_id=%s | user_id=%s | channel=%s | error=%s",
+            request_id,
+            user_id,
+            channel,
+            exc,
+        )
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
 
     except ChatProviderAuthenticationError as exc:
-        logger.warning("Chat provider authentication failed: %s", exc)
+        logger.warning(
+            "Chat provider authentication failed | request_id=%s | user_id=%s | error=%s",
+            request_id,
+            user_id,
+            exc,
+        )
         raise HTTPException(
             status_code=503,
             detail="AI provider authentication failed. Please check OPENAI_API_KEY.",
         ) from exc
 
     except Exception:
-        logger.exception("Unexpected error while processing chat request")
+        logger.exception(
+            "Unexpected error while processing chat request | request_id=%s | user_id=%s | conversation_id=%s",
+            request_id,
+            user_id,
+            payload.conversation_id,
+        )
         raise HTTPException(
             status_code=500,
             detail="Internal server error",
         ) from None
 
     logger.info(
-        "Chat request completed: conversation_id=%s, user_id=%s",
+        "Chat request completed | request_id=%s | conversation_id=%s | user_id=%s | channel=%s | assistant_message_id=%s",
+        request_id,
         result.conversation_id,
         user_id,
+        channel,
+        result.assistant_message_id,
     )
 
     return ChatResponse(
@@ -118,7 +151,6 @@ def chat(
         assistant_message_id=result.assistant_message_id,
         channel_conversation_id=result.channel_conversation_id,
     )
-
 
 @router.get(
     "/{conversation_id}/history",

@@ -11,11 +11,17 @@ def configure_logging(level_name: str, log_file: Path) -> None:
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(name)s %(message)s"
+        fmt=(
+            "%(asctime)s | "
+            "%(levelname)-8s | "
+            "%(name)-30s | "
+            "%(message)s"
+        ),
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.INFO)
 
     for handler in root.handlers:
         handler.setFormatter(formatter)
