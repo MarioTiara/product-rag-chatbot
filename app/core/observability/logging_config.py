@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from datetime import datetime, timezone
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from typing import Any
 
+from app.core.configs.config import get_settings
 from app.core.observability.context import (
     channel_var,
     conversation_id_var,
@@ -23,7 +23,6 @@ class ObservabilityFilter(logging.Filter):
         record.request_id = request_id_var.get()
         record.conversation_id = conversation_id_var.get()
         record.channel = channel_var.get()
-
         return True
 
 
@@ -97,24 +96,20 @@ def _configure_handler(
         handler.addFilter(ObservabilityFilter())
 
 
-def setup_logging(
-    log_level: str | None = None,
-    log_file: str | Path | None = None,
-) -> None:
-    """Configure JSON console logging and daily log-file rotation."""
+def setup_logging() -> None:
+    """Configure JSON console logging and daily file rotation."""
 
-    configured_level = (
-        log_level or os.getenv("LOG_LEVEL", "INFO")
-    ).upper()
+    settings = get_settings()
 
-    level = getattr(logging, configured_level, logging.INFO)
+    configured_level = settings.log_level.upper()
+    level = getattr(logging, configured_level, None)
 
-    # Resolve the configured log file.
-    log_path = Path(
-        log_file or os.getenv("LOG_FILE", "logs/app.log")
-    ).expanduser()
+    if not isinstance(level, int):
+        raise ValueError(
+            f"Invalid LOG_LEVEL configuration: {settings.log_level}"
+        )
 
-    # Create the parent directory if it does not exist.
+    log_path = Path(settings.log_file).expanduser()
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     root_logger = logging.getLogger()
@@ -122,11 +117,11 @@ def setup_logging(
 
     formatter = JsonFormatter()
 
-    # Configure existing handlers without adding duplicates.
+    # Configure existing handlers.
     for handler in root_logger.handlers:
         _configure_handler(handler, level, formatter)
 
-    # Ensure a console handler exists.
+    # Ensure one console handler exists.
     console_handler = next(
         (
             handler
@@ -145,7 +140,7 @@ def setup_logging(
 
     _configure_handler(console_handler, level, formatter)
 
-    # Ensure the daily rotating file handler exists.
+    # Ensure one daily rotating file handler exists.
     resolved_log_path = str(log_path.resolve())
 
     file_handler = next(
@@ -162,7 +157,7 @@ def setup_logging(
     )
 
     if file_handler is None:
-        # Remove an old observability file handler if its path changed.
+        # Remove the old observability file handler if the path changed.
         for handler in root_logger.handlers[:]:
             if getattr(
                 handler, "_observability_handler_type", None
@@ -185,6 +180,4 @@ def setup_logging(
     _configure_handler(file_handler, level, formatter)
 
     # Reduce noisy third-party access logs.
-    logging.getLogger("uvicorn.access").setLevel(
-        logging.WARNING
-    )
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
