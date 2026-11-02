@@ -2,7 +2,7 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
-from app.configs.config import get_settings
+from app.core.configs.config import get_settings
 
 # PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

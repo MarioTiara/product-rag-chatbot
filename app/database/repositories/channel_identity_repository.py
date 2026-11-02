@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.database.connection import DatabaseConnection
-from app.constants.constant import VALID_CHANNELS
+from app.core.constants.constant import VALID_CHANNELS
 
 class ChannelIdentityRepository:
     def __init__(

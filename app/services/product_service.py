@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.configs.config import get_settings
+from app.core.configs.config import get_settings
 from app.database.repositories.product_repository import ProductRepository
 from app.models.product import Product
 from app.schemes.product import ProductSearchFilters

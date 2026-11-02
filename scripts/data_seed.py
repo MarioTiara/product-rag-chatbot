@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from app.database.connection import DatabaseConnection
-from app.configs import config
+from app.core.configs import config
 from app.database.repositories.product_repository import ProductRepository
 
 

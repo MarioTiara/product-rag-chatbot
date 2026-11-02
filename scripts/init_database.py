@@ -4,7 +4,7 @@ import argparse
 import logging
 from pathlib import Path
 
-from app.configs import config
+from app.core.configs import config
 from scripts.migrate import run_migrations
 from scripts.data_seed import seed_products
 
