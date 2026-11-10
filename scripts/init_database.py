@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--csv-path",
         type=Path,
-        default=Path("data/product.csv"),
+        default=Path("data/product-dataset.csv"),
         help="Path to the product CSV file.",
     )
     parser.add_argument(

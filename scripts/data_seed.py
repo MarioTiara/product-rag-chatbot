@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import csv
 import logging
-import uuid
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -14,38 +13,44 @@ from app.database.repositories.product_repository import ProductRepository
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CSV_PATH = PROJECT_ROOT / "data" / "product.csv"
+DEFAULT_CSV_PATH = PROJECT_ROOT / "data" / "product-dataset.csv"
 
 logger = logging.getLogger(__name__)
-settings= config.get_settings()
+settings = config.get_settings()
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Seed SQLite with product CSV data."
     )
+
     parser.add_argument(
         "--csv-path",
         type=Path,
         default=DEFAULT_CSV_PATH,
         help="Path to the product CSV file.",
     )
+
     parser.add_argument(
         "--db-path",
         type=Path,
-        default=s,
+        default=settings.database_path,
         help="Path to the SQLite database file.",
     )
+
     parser.add_argument(
         "--batch-size",
         type=int,
         default=500,
         help="Number of products processed per batch.",
     )
+
     parser.add_argument(
         "--stop-on-error",
         action="store_true",
         help="Stop processing when a batch or row fails.",
     )
+
     return parser
 
 
@@ -76,7 +81,9 @@ def seed_products(
     batch_size: int = 500,
     stop_on_error: bool = False,
 ) -> dict[str, Any]:
+
     """Import product CSV data in independently committed batches."""
+
     if batch_size < 1:
         raise ValueError("batch_size must be greater than 0.")
 
@@ -101,7 +108,12 @@ def seed_products(
     logger.info("Database: %s", db_path)
     logger.info("Batch size: %s", batch_size)
 
-    with csv_path.open("r", encoding="utf-8-sig", newline="") as file:
+    with csv_path.open(
+        "r",
+        encoding="utf-8-sig",
+        newline="",
+    ) as file:
+
         reader = csv.DictReader(file)
 
         if not reader.fieldnames:
@@ -111,6 +123,7 @@ def seed_products(
             iter_batches(reader, batch_size),
             start=1,
         ):
+
             result["total"] += len(raw_batch)
 
             valid_products: list[dict[str, Any]] = []
@@ -120,11 +133,14 @@ def seed_products(
             for line_number, row in raw_batch:
                 try:
                     product = normalize_product(row)
+
                     valid_products.append(product)
                     valid_line_numbers.append(line_number)
+
                 except (ValueError, TypeError) as exc:
                     batch_has_invalid_rows = True
                     result["failed"] += 1
+
                     result["failed_rows"].append({
                         "line": line_number,
                         "product_code": row.get("Product_Code"),
@@ -152,7 +168,6 @@ def seed_products(
                 continue
 
             try:
-                # Each call must be transactional in the repository.
                 affected = repository.upsert_many(valid_products)
 
                 result["succeeded"] += affected
@@ -199,10 +214,12 @@ def seed_products(
             encoding="utf-8-sig",
             newline="",
         ) as error_file:
+
             writer = csv.DictWriter(
                 error_file,
                 fieldnames=["line", "product_code", "error"],
             )
+
             writer.writeheader()
             writer.writerows(failed_rows)
 
@@ -224,8 +241,12 @@ def seed_products(
     return result
 
 
-def normalize_product(row: dict[str, str | None]) -> dict[str, Any]:
-    """Normalize a CSV row to match the products table schema."""
+def normalize_product(
+    row: dict[str, str | None],
+) -> dict[str, Any]:
+
+    """Normalize CSV row to match the products table schema."""
+
     product_code = (row.get("Product_Code") or "").strip()
     brand = (row.get("Brand") or "").strip()
     name = (row.get("Name") or "").strip()
@@ -238,29 +259,45 @@ def normalize_product(row: dict[str, str | None]) -> dict[str, Any]:
         )
 
     return {
-        "id": str(uuid.uuid4()),
-        "product_id": (row.get("Product ID") or "").strip() or None,
+        "product_code": product_code,
         "brand": brand,
         "model": (row.get("Model") or "").strip() or None,
-        "product_code": product_code,
         "name": name,
         "os": (row.get("OS") or "").strip() or None,
-        "price": parse_float(row.get("USD_Price")),
-        "processor_name": (row.get("Processor_Name") or "").strip() or None,
-        "processor_brand": (row.get("Processor_Brand") or "").strip() or None,
-        "ram_expandable": parse_int(row.get("RAM_Expandable")) or 0,
-        "ram_gb": parse_int(row.get("RAM_GB")),
-        "ram_type": (row.get("RAM_TYPE") or "").strip() or None,
-        "processor_ghz": parse_float(row.get("Processor_Ghz")),
-        "display_type": (row.get("Display_type") or "").strip() or None,
-        "display_inch": parse_float(row.get("Display_Inch")),
+        "usd_price": parse_float(row.get("USD_Price")),
+        "processor_name": (
+            row.get("Processor_Name") or ""
+        ).strip() or None,
+        "processor_brand": (
+            row.get("Processor_Brand") or ""
+        ).strip() or None,
+        "ram_expandable": (
+            parse_int(row.get("RAM_Expandable")) or 0
+        ),
+        "ram": parse_int(row.get("RAM")),
+        "ram_type": (
+            row.get("RAM_type") or ""
+        ).strip() or None,
+        "processor_ghz": parse_float(
+            row.get("Processor_Ghz")
+        ),
+        "display_type": (
+            row.get("Display_type") or ""
+        ).strip() or None,
+        "display_inch": parse_float(
+            row.get("Display_Inch")
+        ),
         "gpu": (row.get("GPU") or "").strip() or None,
-        "gpu_brand": (row.get("GPU_Brand") or "").strip() or None,
+        "gpu_brand": (
+            row.get("GPU_Brand") or ""
+        ).strip() or None,
         "ssd_gb": parse_int(row.get("SSD_GB")),
         "hdd_gb": parse_int(row.get("HDD_GB")),
-        "stock": parse_int(row.get("Stock")) or 0,
-        "battery_life": (row.get("Battery_Life") or "").strip() or None,
+        "battery_life": (
+            row.get("Battery_Life") or ""
+        ).strip() or None,
         "tags": (row.get("Tags") or "").strip() or None,
+        "stock": parse_int(row.get("Stock")) or 0,
     }
 
 
