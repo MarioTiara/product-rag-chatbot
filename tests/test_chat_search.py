@@ -34,7 +34,7 @@ def test_chat_uses_search_tool_for_cheapest_i7_with_min_ram(client, conversation
             """
             SELECT name
             FROM products
-            WHERE ram_gb >= ?
+            WHERE ram >= ?
               AND LOWER(processor_name) LIKE ?
             ORDER BY price ASC, brand, name
             LIMIT 1

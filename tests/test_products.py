@@ -24,7 +24,7 @@ def test_min_ram_filter_includes_products_at_or_above_threshold(product_service)
     results = product_service.search_products(ProductSearchFilters(min_ram=16, limit=100))
 
     assert results
-    assert all(product.ram_gb >= 16 for product in results if product.ram_gb is not None)
+    assert all(product.ram >= 16 for product in results if product.ram is not None)
 
 
 def test_intel_core_i7_matching_excludes_other_intel_processors(product_service):
@@ -53,7 +53,7 @@ def test_combined_filters_apply_before_limit(product_service, db_service):
             """
             SELECT product_code
             FROM products
-            WHERE ram_gb >= ?
+            WHERE ram >= ?
               AND LOWER(processor_name) LIKE ?
             ORDER BY price ASC, brand, name
             LIMIT 1

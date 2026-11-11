@@ -41,7 +41,7 @@ TEST_PRODUCTS = [
         "processor_name": "Intel Core i5",
         "processor_brand": "Intel",
         "ram_expandable": 1,
-        "ram_gb": 8,
+        "ram": 8,
         "ram_type": "DDR4",
         "processor_ghz": 3.5,
         "display_type": "IPS",
@@ -66,7 +66,7 @@ TEST_PRODUCTS = [
         "processor_name": "Intel Core i5",
         "processor_brand": "Intel",
         "ram_expandable": 1,
-        "ram_gb": 16,
+        "ram": 16,
         "ram_type": "DDR4",
         "processor_ghz": 3.5,
         "display_type": "IPS",
@@ -91,7 +91,7 @@ TEST_PRODUCTS = [
         "processor_name": "Intel Core i7 (11th Gen)",
         "processor_brand": "Intel",
         "ram_expandable": 1,
-        "ram_gb": 8,
+        "ram": 8,
         "ram_type": "DDR4",
         "processor_ghz": 4.2,
         "display_type": "IPS",
@@ -116,7 +116,7 @@ TEST_PRODUCTS = [
         "processor_name": "Intel Core i7 (11th Gen)",
         "processor_brand": "Intel",
         "ram_expandable": 1,
-        "ram_gb": 16,
+        "ram": 16,
         "ram_type": "DDR4",
         "processor_ghz": 4.2,
         "display_type": "IPS",
@@ -141,7 +141,7 @@ TEST_PRODUCTS = [
         "processor_name": "Intel Core i9 (12th Gen)",
         "processor_brand": "Intel",
         "ram_expandable": 0,
-        "ram_gb": 16,
+        "ram": 16,
         "ram_type": "DDR4",
         "processor_ghz": 4.8,
         "display_type": "IPS",
@@ -266,7 +266,7 @@ class FakeChatCompletions:
                                         type="function",
                                         function=FakeToolFunction(
                                             name="search_products",
-                                            arguments=json.dumps({"query": "ASUS VivoBook 14", "ram_gb": 8, "limit": 5}),
+                                            arguments=json.dumps({"query": "ASUS VivoBook 14", "ram": 8, "limit": 5}),
                                         ),
                                     )
                                 ],
@@ -413,7 +413,7 @@ def _create_schema(connection) -> None:
             processor_name TEXT,
             processor_brand TEXT,
             ram_expandable INTEGER NOT NULL DEFAULT 0,
-            ram_gb INTEGER,
+            ram INTEGER,
             ram_type TEXT,
             processor_ghz REAL,
             display_type TEXT,
@@ -469,12 +469,12 @@ def db_service(tmp_path: Path) -> DatabaseConnection:
                 """
                 INSERT INTO products (
                     id, product_id, brand, model, product_code, name, os, price,
-                    processor_name, processor_brand, ram_expandable, ram_gb,
+                    processor_name, processor_brand, ram_expandable, ram,
                     ram_type, processor_ghz, display_type, display_inch, gpu,
                     gpu_brand, ssd_gb, hdd_gb, stock, battery_life, tags
                 ) VALUES (
                     :id, :product_id, :brand, :model, :product_code, :name, :os, :price,
-                    :processor_name, :processor_brand, :ram_expandable, :ram_gb,
+                    :processor_name, :processor_brand, :ram_expandable, :ram,
                     :ram_type, :processor_ghz, :display_type, :display_inch, :gpu,
                     :gpu_brand, :ssd_gb, :hdd_gb, :stock, :battery_life, :tags
                 )

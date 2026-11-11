@@ -15,7 +15,7 @@ class Product(BaseModel):
     processor_name: str | None = None
     processor_brand: str | None = None
     ram_expandable: int = 0
-    ram_gb: int | None = None
+    ram: int | None = None
     ram_type: str | None = None
     processor_ghz: float | None = None
     display_type: str | None = None
