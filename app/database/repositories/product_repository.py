@@ -7,6 +7,7 @@ from typing import Any
 import uuid
 
 from app.database.connection import DatabaseConnection
+from app.models.product import Product
 from app.schemes.product import ProductSearchFilters
 
 logger = logging.getLogger(__name__)
@@ -396,6 +397,21 @@ class ProductRepository:
             )
 
         return dict(row)
+    
+    def get_all(self) -> list[Product]:
+        query = """
+            SELECT *
+            FROM products
+            ORDER BY name ASC
+        """
+
+        with self.db.connect() as connection:
+            rows = connection.execute(query).fetchall()
+
+        return [
+            Product.from_row(dict(row))
+            for row in rows
+        ]
 
     def upsert_many(self, products: list[dict[str, Any]]) -> int:
         if not products:

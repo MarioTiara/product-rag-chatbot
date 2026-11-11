@@ -12,10 +12,11 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
+    ai_provider: str = "openai"
     # OpenAI
     openai_api_key: SecretStr
     openai_model: str = "gpt-4.1-mini"
-
+    
     # Database
     database_path: Path = BASE_DIR / "data" / "products.sqlite3"
 

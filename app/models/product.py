@@ -6,7 +6,6 @@ from pydantic import BaseModel
 class Product(BaseModel):
     product_id: str | None = None
     brand: str
-    product_id_2: str | None = None
     model: str | None = None
     product_code: str | None = None
     name: str

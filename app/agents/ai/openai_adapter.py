@@ -1,6 +1,15 @@
+
+import inspect
+import json
+from typing import TypeVar
+
 from openai import OpenAI
+from pydantic import BaseModel
 
 from app.agents.ai.dto import AIResponse, AIToolCall
+
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class OpenAIAdapter:
@@ -39,3 +48,23 @@ class OpenAIAdapter:
             content=message.content,
             tool_calls=tool_calls,
         )
+
+    def create_structured_completion(
+        self,
+        *,
+        messages: list[dict],
+        response_format: type[T],
+    ) -> T:
+
+        response = self.client.chat.completions.parse(
+            model=self.model,
+            messages=messages,
+            response_format=response_format,
+        )
+
+        parsed = response.choices[0].message.parsed
+
+        if parsed is None:
+            raise ValueError("OpenAI returned an empty structured response.")
+
+        return parsed
