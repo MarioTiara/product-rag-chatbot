@@ -63,7 +63,7 @@ PRODUCT_TOOLS: list[dict[str, Any]] = [
                         "type": "string",
                         "description":"Expandle RAM capacity in GB",
                     },
-                    "ram_gb": {
+                    "ram": {
                         "type": "integer",
                         "minimum": 0,
                         "description": "RAM capacity in GB.",
@@ -186,7 +186,7 @@ PRODUCT_TOOLS: list[dict[str, Any]] = [
                     "processor_brand": {"type": "string"},
                     "processor_name": {"type": "string"},
                     "ram_expandable": {"type": "string"},
-                    "ram_gb": {"type": "integer", "minimum": 0},
+                    "ram": {"type": "integer", "minimum": 0},
                     "min_ram": {"type": "number", "minimum": 0},
                     "max_ram": {"type": "number", "minimum": 0},
                     "ram_type": {"type": "string"},

@@ -6,7 +6,6 @@ from pydantic import BaseModel
 class Product(BaseModel):
     product_id: str | None = None
     brand: str
-    product_id_2: str | None = None
     model: str | None = None
     product_code: str | None = None
     name: str
@@ -15,7 +14,7 @@ class Product(BaseModel):
     processor_name: str | None = None
     processor_brand: str | None = None
     ram_expandable: int = 0
-    ram_gb: int | None = None
+    ram: int | None = None
     ram_type: str | None = None
     processor_ghz: float | None = None
     display_type: str | None = None
