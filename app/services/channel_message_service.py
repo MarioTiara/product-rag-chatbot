@@ -4,7 +4,7 @@ from app.core.constants.constant import (
     VALID_DELIVERY_STATUSES,
     VALID_MESSAGE_TYPES,
 )
-from app.database.repositories.channel_message_repository import (
+from app.database.repositories.postgres.channel_message_repository import (
     ChannelMessageRepository,
 )
 

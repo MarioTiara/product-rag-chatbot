@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from app.core.constants.constant import VALID_CHANNELS
-from app.database.repositories.conversation_repository import (
+from app.database.repositories.postgres.conversation_repository import (
     ConversationRepository,
 )
 

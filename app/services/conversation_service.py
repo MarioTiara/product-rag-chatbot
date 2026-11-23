@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.database.repositories.user_repository import UserRepository
-from app.database.repositories.channel_identity_repository import (
+from app.database.repositories.postgres.user_repository import UserRepository
+from app.database.repositories.postgres.channel_identity_repository import (
     ChannelIdentityRepository,
 )
-from app.database.repositories.channel_message_repository import (
+from app.database.repositories.postgres.channel_message_repository import (
     ChannelMessageRepository,
 )
-from app.database.repositories.conversation_repository import (
+from app.database.repositories.postgres.conversation_repository import (
     ConversationRepository,
 )
 

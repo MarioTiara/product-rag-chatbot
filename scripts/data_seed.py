@@ -9,7 +9,7 @@ from typing import Any, Iterator
 
 from app.database.connection import DatabaseConnection
 from app.core.configs import config
-from app.database.repositories.product_repository import ProductRepository
+from app.database.repositories.postgres.product_repository import ProductRepository
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -264,7 +264,7 @@ def normalize_product(
         "model": (row.get("Model") or "").strip() or None,
         "name": name,
         "os": (row.get("OS") or "").strip() or None,
-        "usd_price": parse_float(row.get("USD_Price")),
+        "price": parse_float(row.get("USD_Price")),
         "processor_name": (
             row.get("Processor_Name") or ""
         ).strip() or None,

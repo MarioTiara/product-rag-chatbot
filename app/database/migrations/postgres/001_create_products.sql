@@ -5,15 +5,15 @@ CREATE TABLE products (
     model VARCHAR(255),
     name VARCHAR(500) NOT NULL,
     os VARCHAR(100),
-    usd_price REAL,
+    price NUMERIC(12, 2),
     processor_name VARCHAR(255),
     processor_brand VARCHAR(100),
     ram_expandable INTEGER NOT NULL DEFAULT 0,
     ram INTEGER,
     ram_type VARCHAR(100),
-    processor_ghz REAL,
+    processor_ghz DOUBLE PRECISION,
     display_type VARCHAR(100),
-    display_inch REAL,
+    display_inch DOUBLE PRECISION,
     gpu VARCHAR(255),
     gpu_brand VARCHAR(100),
     ssd_gb INTEGER,
@@ -21,10 +21,15 @@ CREATE TABLE products (
     battery_life VARCHAR(100),
     tags TEXT,
     stock INTEGER NOT NULL DEFAULT 0,
-    created_at VARCHAR(30) DEFAULT CURRENT_TIMESTAMP,
-    updated_at VARCHAR(30) DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_products_brand ON products(brand);
-CREATE INDEX idx_products_name ON products(name);
-CREATE INDEX idx_products_product_code ON products(product_code);
+CREATE INDEX idx_products_brand
+    ON products(brand);
+
+CREATE INDEX idx_products_name
+    ON products(name);
+
+-- Not necessary: product_code already has a UNIQUE constraint,
+-- which automatically creates a unique index.

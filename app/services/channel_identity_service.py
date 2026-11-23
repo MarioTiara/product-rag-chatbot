@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from app.core.constants.constant import VALID_CHANNELS
-from app.database.repositories.channel_identity_repository import (
+from app.database.repositories.postgres.channel_identity_repository import (
     ChannelIdentityRepository,
 )
 

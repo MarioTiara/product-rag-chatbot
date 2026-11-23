@@ -5,8 +5,8 @@ import logging
 import sys
 
 from app.database.connection import DatabaseConnection
-from app.database.repositories.product_repository import ProductRepository
-from app.database.repositories.product_enrichment_repository import (
+from app.database.repositories.postgres.product_repository import ProductRepository
+from app.database.repositories.postgres.product_enrichment_repository import (
     ProductEnrichmentRepository,
 )
 from app.agents.ai.ai_client_factory import AIClientFactory

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
 import uuid
+from typing import Any
 
 from app.database.connection import DatabaseConnection
 from app.models.product import Product
@@ -17,44 +17,101 @@ class ProductRepository:
     def __init__(self, db: DatabaseConnection) -> None:
         self.db = db
 
+    # =====================================================
+    # Mapping
+    # =====================================================
+
+    @staticmethod
+    def _to_product(row: dict[str, Any] | None) -> Product | None:
+        if row is None:
+            return None
+
+        data = dict(row)
+
+        # Map database fields to Product model fields.
+        data["product_id"] = data.pop("id")
+        data["price"] = data.pop("price")
+
+        return Product.model_validate(data)
+
+    @staticmethod
+    def _to_db_params(product: Product) -> tuple[Any, ...]:
+        if not product.product_code:
+            raise ValueError("Product product_code is required.")
+
+        return (
+            product.product_id or str(uuid.uuid4()),
+            product.product_code,
+            product.brand,
+            product.model,
+            product.name,
+            product.os,
+            product.price,
+            product.processor_name,
+            product.processor_brand,
+            product.ram_expandable,
+            product.ram,
+            product.ram_type,
+            product.processor_ghz,
+            product.display_type,
+            product.display_inch,
+            product.gpu,
+            product.gpu_brand,
+            product.ssd_gb,
+            product.hdd_gb,
+            product.battery_life,
+            product.tags,
+            product.stock,
+        )
+
+    # =====================================================
+    # Basic Queries
+    # =====================================================
+
     @staticmethod
     def _tokenize(value: str) -> list[str]:
         return re.findall(r"[a-z0-9]+", value.lower())
 
-    def get_by_id(self, product_id: str) -> dict[str, Any] | None:
+    def get_by_id(self, product_id: str) -> Product | None:
         query = """
             SELECT *
             FROM products
-            WHERE id = ?
+            WHERE id = %s
             LIMIT 1
         """
 
         with self.db.connect() as connection:
-            row = connection.execute(query, (product_id,)).fetchone()
+            row = connection.execute(
+                query,
+                (product_id,),
+            ).fetchone()
 
-        return dict(row) if row else None
+        return self._to_product(row)
 
-    def get_by_code(self, product_code: str) -> dict[str, Any] | None:
+    def get_by_code(self, product_code: str) -> Product | None:
         query = """
             SELECT *
             FROM products
-            WHERE product_code = ?
+            WHERE product_code = %s
             LIMIT 1
         """
 
         with self.db.connect() as connection:
-            row = connection.execute(query, (product_code,)).fetchone()
+            row = connection.execute(
+                query,
+                (product_code,),
+            ).fetchone()
 
-        return dict(row) if row else None
+        return self._to_product(row)
 
-    def get_by_name(self, name: str) -> dict[str, Any] | None:
+    def get_by_name(self, name: str) -> Product | None:
         query = """
             SELECT *
             FROM products
-            WHERE LOWER(name) = LOWER(?)
-               OR LOWER(name) LIKE LOWER(?)
+            WHERE LOWER(name) = LOWER(%s)
+               OR name ILIKE %s
             ORDER BY
-                CASE WHEN LOWER(name) = LOWER(?) THEN 0 ELSE 1 END,
+                CASE WHEN LOWER(name) = LOWER(%s) THEN 0 ELSE 1 END,
                 brand ASC,
                 name ASC,
                 product_code ASC
@@ -67,7 +124,11 @@ class ProductRepository:
                 (name, f"%{name}%", name),
             ).fetchone()
 
-        return dict(row) if row else None
+        return self._to_product(row)
+
+    # =====================================================
+    # Sorting
+    # =====================================================
 
     @staticmethod
     def _build_order_by(
@@ -75,7 +136,7 @@ class ProductRepository:
         sort_order: str = "asc",
     ) -> str:
         sort_columns = {
-            "price": "usd_price",
+            "price": "price",
             "stock": "stock",
             "ram": "ram",
             "name": "name",
@@ -92,6 +153,10 @@ class ProductRepository:
                 name ASC,
                 product_code ASC
         """
+
+    # =====================================================
+    # Search Filters
+    # =====================================================
 
     def _build_filter_clauses(
         self,
@@ -110,19 +175,19 @@ class ProductRepository:
 
             clauses.append("""
                 (
-                    product_code LIKE ?
-                    OR brand LIKE ?
-                    OR model LIKE ?
-                    OR name LIKE ?
-                    OR os LIKE ?
-                    OR processor_name LIKE ?
-                    OR processor_brand LIKE ?
-                    OR ram_type LIKE ?
-                    OR display_type LIKE ?
-                    OR gpu LIKE ?
-                    OR gpu_brand LIKE ?
-                    OR battery_life LIKE ?
-                    OR tags LIKE ?
+                    product_code ILIKE %s
+                    OR brand ILIKE %s
+                    OR model ILIKE %s
+                    OR name ILIKE %s
+                    OR os ILIKE %s
+                    OR processor_name ILIKE %s
+                    OR processor_brand ILIKE %s
+                    OR ram_type ILIKE %s
+                    OR display_type ILIKE %s
+                    OR gpu ILIKE %s
+                    OR gpu_brand ILIKE %s
+                    OR battery_life ILIKE %s
+                    OR tags ILIKE %s
                 )
             """)
 
@@ -130,16 +195,16 @@ class ProductRepository:
 
         # Text filters
         string_fields = [
-            ("product_code", "product_code LIKE ?"),
-            ("name", "LOWER(name) LIKE LOWER(?)"),
-            ("model", "LOWER(model) LIKE LOWER(?)"),
-            ("brand", "LOWER(brand) LIKE LOWER(?)"),
-            ("os", "LOWER(os) LIKE LOWER(?)"),
-            ("processor_brand", "LOWER(processor_brand) LIKE LOWER(?)"),
-            ("ram_type", "LOWER(ram_type) LIKE LOWER(?)"),
-            ("display_type", "LOWER(display_type) LIKE LOWER(?)"),
-            ("gpu", "LOWER(gpu) LIKE LOWER(?)"),
-            ("gpu_brand", "LOWER(gpu_brand) LIKE LOWER(?)"),
+            ("product_code", "product_code ILIKE %s"),
+            ("name", "name ILIKE %s"),
+            ("model", "model ILIKE %s"),
+            ("brand", "brand ILIKE %s"),
+            ("os", "os ILIKE %s"),
+            ("processor_brand", "processor_brand ILIKE %s"),
+            ("ram_type", "ram_type ILIKE %s"),
+            ("display_type", "display_type ILIKE %s"),
+            ("gpu", "gpu ILIKE %s"),
+            ("gpu_brand", "gpu_brand ILIKE %s"),
         ]
 
         for field_name, clause in string_fields:
@@ -157,7 +222,7 @@ class ProductRepository:
                 clauses.append(
                     "("
                     + " AND ".join(
-                        "LOWER(processor_name) LIKE ?"
+                        "processor_name ILIKE %s"
                         for _ in tokens
                     )
                     + ")"
@@ -167,52 +232,52 @@ class ProductRepository:
 
         # Processor speed
         if filters.min_ghz is not None:
-            clauses.append("processor_ghz >= ?")
+            clauses.append("processor_ghz >= %s")
             params.append(filters.min_ghz)
 
         if filters.max_ghz is not None:
-            clauses.append("processor_ghz <= ?")
+            clauses.append("processor_ghz <= %s")
             params.append(filters.max_ghz)
 
         # Expandable RAM
         if filters.ram_expandable is not None:
-            clauses.append("ram_expandable = ?")
+            clauses.append("ram_expandable = %s")
             params.append(filters.ram_expandable)
 
         # Installed RAM
         if filters.min_ram is not None:
-            clauses.append("ram >= ?")
+            clauses.append("ram >= %s")
             params.append(filters.min_ram)
 
         if filters.max_ram is not None:
-            clauses.append("ram <= ?")
+            clauses.append("ram <= %s")
             params.append(filters.max_ram)
 
         # Display size
         if filters.min_display is not None:
-            clauses.append("display_inch >= ?")
+            clauses.append("display_inch >= %s")
             params.append(filters.min_display)
 
         if filters.max_display is not None:
-            clauses.append("display_inch <= ?")
+            clauses.append("display_inch <= %s")
             params.append(filters.max_display)
 
         # SSD capacity
         if filters.min_ssd is not None:
-            clauses.append("ssd_gb >= ?")
+            clauses.append("ssd_gb >= %s")
             params.append(filters.min_ssd)
 
         if filters.max_ssd is not None:
-            clauses.append("ssd_gb <= ?")
+            clauses.append("ssd_gb <= %s")
             params.append(filters.max_ssd)
 
         # HDD capacity
         if filters.min_hdd is not None:
-            clauses.append("hdd_gb >= ?")
+            clauses.append("hdd_gb >= %s")
             params.append(filters.min_hdd)
 
         if filters.max_hdd is not None:
-            clauses.append("hdd_gb <= ?")
+            clauses.append("hdd_gb <= %s")
             params.append(filters.max_hdd)
 
         # Price (USD)
@@ -229,23 +294,27 @@ class ProductRepository:
         )
 
         if min_price is not None:
-            clauses.append("usd_price >= ?")
+            clauses.append("price >= %s")
             params.append(min_price)
 
         if max_price is not None:
-            clauses.append("usd_price <= ?")
+            clauses.append("price <= %s")
             params.append(max_price)
 
         # Inventory
         if filters.min_stock is not None:
-            clauses.append("stock >= ?")
+            clauses.append("stock >= %s")
             params.append(filters.min_stock)
 
         if filters.max_stock is not None:
-            clauses.append("stock <= ?")
+            clauses.append("stock <= %s")
             params.append(filters.max_stock)
 
         return clauses, params
+
+    # =====================================================
+    # Search
+    # =====================================================
 
     def search(
         self,
@@ -253,7 +322,7 @@ class ProductRepository:
         *,
         min_source_price: float | None = None,
         max_source_price: float | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[Product]:
 
         clauses, params = self._build_filter_clauses(
             filters,
@@ -277,7 +346,7 @@ class ProductRepository:
             FROM products
             {where_sql}
             {order_sql}
-            LIMIT ?
+            LIMIT %s
         """
 
         params.append(filters.limit)
@@ -289,9 +358,20 @@ class ProductRepository:
         )
 
         with self.db.connect() as connection:
-            rows = connection.execute(query, params).fetchall()
+            rows = connection.execute(
+                query,
+                params,
+            ).fetchall()
 
-        return [dict(row) for row in rows]
+        return [
+            product
+            for row in rows
+            if (product := self._to_product(row)) is not None
+        ]
+
+    # =====================================================
+    # Aggregation
+    # =====================================================
 
     def get_total_stock(
         self,
@@ -320,12 +400,20 @@ class ProductRepository:
         """
 
         with self.db.connect() as connection:
-            row = connection.execute(query, params).fetchone()
+            row = connection.execute(
+                query,
+                params,
+            ).fetchone()
 
         return int(row["total_stock"]) if row else 0
 
-    def insert(self, product: dict[str, Any]) -> dict[str, Any]:
-        generated_id = product.get("id") or str(uuid.uuid4())
+    # =====================================================
+    # Insert
+    # =====================================================
+
+    def insert(self, product: Product) -> Product:
+        params = self._to_db_params(product)
+        generated_id = params[0]
 
         query = """
             INSERT INTO products (
@@ -335,7 +423,7 @@ class ProductRepository:
                 model,
                 name,
                 os,
-                usd_price,
+                price,
                 processor_name,
                 processor_brand,
                 ram_expandable,
@@ -353,42 +441,16 @@ class ProductRepository:
                 stock
             )
             VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
+            RETURNING *
         """
 
-        params = (
-            generated_id,
-            product["product_code"],
-            product["brand"],
-            product.get("model"),
-            product["name"],
-            product.get("os"),
-            product.get("usd_price"),
-            product.get("processor_name"),
-            product.get("processor_brand"),
-            product.get("ram_expandable", 0),
-            product.get("ram"),
-            product.get("ram_type"),
-            product.get("processor_ghz"),
-            product.get("display_type"),
-            product.get("display_inch"),
-            product.get("gpu"),
-            product.get("gpu_brand"),
-            product.get("ssd_gb"),
-            product.get("hdd_gb"),
-            product.get("battery_life"),
-            product.get("tags"),
-            product.get("stock", 0),
-        )
-
         with self.db.connect() as connection:
-            connection.execute(query, params)
-
             row = connection.execute(
-                "SELECT * FROM products WHERE id = ?",
-                (generated_id,),
+                query,
+                params,
             ).fetchone()
 
         if row is None:
@@ -396,8 +458,19 @@ class ProductRepository:
                 f"Failed to retrieve inserted product: {generated_id}"
             )
 
-        return dict(row)
-    
+        result = self._to_product(row)
+
+        if result is None:
+            raise RuntimeError(
+                f"Failed to map inserted product: {generated_id}"
+            )
+
+        return result
+
+    # =====================================================
+    # Get All
+    # =====================================================
+
     def get_all(self) -> list[Product]:
         query = """
             SELECT *
@@ -409,11 +482,16 @@ class ProductRepository:
             rows = connection.execute(query).fetchall()
 
         return [
-            Product.from_row(dict(row))
+            product
             for row in rows
+            if (product := self._to_product(row)) is not None
         ]
 
-    def upsert_many(self, products: list[dict[str, Any]]) -> int:
+    # =====================================================
+    # Bulk Upsert
+    # =====================================================
+
+    def upsert_many(self, products: list[Product]) -> int:
         if not products:
             return 0
 
@@ -425,7 +503,7 @@ class ProductRepository:
                 model,
                 name,
                 os,
-                usd_price,
+                price,
                 processor_name,
                 processor_brand,
                 ram_expandable,
@@ -443,58 +521,35 @@ class ProductRepository:
                 stock
             )
             VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
-            ON CONFLICT(product_code) DO UPDATE SET
-                brand = excluded.brand,
-                model = excluded.model,
-                name = excluded.name,
-                os = excluded.os,
-                usd_price = excluded.usd_price,
-                processor_name = excluded.processor_name,
-                processor_brand = excluded.processor_brand,
-                ram_expandable = excluded.ram_expandable,
-                ram = excluded.ram,
-                ram_type = excluded.ram_type,
-                processor_ghz = excluded.processor_ghz,
-                display_type = excluded.display_type,
-                display_inch = excluded.display_inch,
-                gpu = excluded.gpu,
-                gpu_brand = excluded.gpu_brand,
-                ssd_gb = excluded.ssd_gb,
-                hdd_gb = excluded.hdd_gb,
-                battery_life = excluded.battery_life,
-                tags = excluded.tags,
-                stock = excluded.stock,
+            ON CONFLICT (product_code) DO UPDATE SET
+                brand = EXCLUDED.brand,
+                model = EXCLUDED.model,
+                name = EXCLUDED.name,
+                os = EXCLUDED.os,
+                price = EXCLUDED.price,
+                processor_name = EXCLUDED.processor_name,
+                processor_brand = EXCLUDED.processor_brand,
+                ram_expandable = EXCLUDED.ram_expandable,
+                ram = EXCLUDED.ram,
+                ram_type = EXCLUDED.ram_type,
+                processor_ghz = EXCLUDED.processor_ghz,
+                display_type = EXCLUDED.display_type,
+                display_inch = EXCLUDED.display_inch,
+                gpu = EXCLUDED.gpu,
+                gpu_brand = EXCLUDED.gpu_brand,
+                ssd_gb = EXCLUDED.ssd_gb,
+                hdd_gb = EXCLUDED.hdd_gb,
+                battery_life = EXCLUDED.battery_life,
+                tags = EXCLUDED.tags,
+                stock = EXCLUDED.stock,
                 updated_at = CURRENT_TIMESTAMP
         """
 
         params = [
-            (
-                product.get("id") or str(uuid.uuid4()),
-                product["product_code"],
-                product["brand"],
-                product.get("model"),
-                product["name"],
-                product.get("os"),
-                product.get("usd_price"),
-                product.get("processor_name"),
-                product.get("processor_brand"),
-                product.get("ram_expandable", 0),
-                product.get("ram"),
-                product.get("ram_type"),
-                product.get("processor_ghz"),
-                product.get("display_type"),
-                product.get("display_inch"),
-                product.get("gpu"),
-                product.get("gpu_brand"),
-                product.get("ssd_gb"),
-                product.get("hdd_gb"),
-                product.get("battery_life"),
-                product.get("tags"),
-                product.get("stock", 0),
-            )
+            self._to_db_params(product)
             for product in products
         ]
 
@@ -502,6 +557,10 @@ class ProductRepository:
             connection.executemany(query, params)
 
         return len(params)
+
+    # =====================================================
+    # Logging
+    # =====================================================
 
     def _log_query(
         self,

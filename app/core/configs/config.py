@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     
     # Database
     database_path: Path = BASE_DIR / "data" / "products.sqlite3"
+    database_url: str
 
     # Application
     app_name: str = "Product RAG Chatbot"

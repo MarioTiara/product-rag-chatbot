@@ -1,6 +1,6 @@
 from app.core.configs.config import get_settings
 from app.database.connection import DatabaseConnection
-from app.database.repositories.user_repository import UserRepository
+from app.database.repositories.postgres.user_repository import UserRepository
 from app.models.user import User
 from app.utils.security import create_access_token, verify_password
 
@@ -16,7 +16,7 @@ class AuthenticationService:
     ) -> None:
         if user_repository is None:
             settings = get_settings()
-            database = DatabaseConnection(settings.database_path)
+            database = DatabaseConnection(settings.database_url)
             user_repository = UserRepository(database)
 
         self.users = user_repository
@@ -45,7 +45,7 @@ class AuthenticationService:
                 "Invalid email or password"
             )
 
-        return User(**user_data)
+        return user_data
 
     def login(
         self,
@@ -69,4 +69,4 @@ class AuthenticationService:
         if user_data is None:
             return None
 
-        return User(**user_data)
+        return user_data

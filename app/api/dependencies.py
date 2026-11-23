@@ -15,7 +15,7 @@ from app.agents.tools.tool_history_validator import ToolHistoryValidator
 from app.agents.utils.message_mapper import MessageMapper
 from app.core.configs import config
 from app.database.connection import DatabaseConnection
-from app.database.repositories.product_repository import ProductRepository
+from app.database.repositories.postgres.product_repository import ProductRepository
 from app.models.user import User
 from app.services.authentication_service import AuthenticationService
 from app.services.conversation_service import ConversationService
@@ -60,7 +60,7 @@ def get_product_service() -> ProductService:
     """Create and cache the product service."""
 
     settings = config.get_settings()
-    database = DatabaseConnection(settings.database_path)
+    database = DatabaseConnection(settings.database_url)
     repository = ProductRepository(database)
 
     return ProductService(repository)
