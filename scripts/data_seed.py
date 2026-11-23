@@ -9,7 +9,7 @@ from typing import Any, Iterator
 
 from app.database.connection import DatabaseConnection
 from app.core.configs import config
-from app.database.repositories.product_repository import ProductRepository
+from app.database.repositories.postgres.product_repository import ProductRepository
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

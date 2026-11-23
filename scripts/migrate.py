@@ -3,53 +3,44 @@ from __future__ import annotations
 
 import argparse
 import logging
-import sqlite3
 from pathlib import Path
 
-
+import psycopg
 
 from app.core.configs.config import get_settings
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS_DIR = PROJECT_ROOT / "app" / "database" / "migrations"
+MIGRATIONS_DIR = PROJECT_ROOT / "app" / "database" / "migrations" / "postgres"
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
-settings= get_settings()
 
 def run_migrations(
-    db_path: str | Path = settings.database_path,
+    database_url: str = settings.database_url,
 ) -> None:
-    """Apply pending SQL migrations to the SQLite database."""
-    db_path = Path(db_path)
-
-    if not db_path.is_absolute():
-        db_path = PROJECT_ROOT / db_path
+    """Apply pending SQL migrations to PostgreSQL."""
 
     if not MIGRATIONS_DIR.is_dir():
         raise FileNotFoundError(
             f"Migrations directory not found: {MIGRATIONS_DIR}"
         )
 
-    # Ensure the database directory exists.
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-
     logger.info("Starting database migrations")
-    logger.info("Database: %s", db_path)
+    logger.info("Database: PostgreSQL")
     logger.info("Migrations directory: %s", MIGRATIONS_DIR)
 
-    connection = sqlite3.connect(db_path)
+    with psycopg.connect(database_url) as connection:
 
-    try:
-        connection.execute("PRAGMA foreign_keys = ON")
-
+        # Create migration tracking table.
         connection.execute("""
             CREATE TABLE IF NOT EXISTS schema_migrations (
                 version VARCHAR(255) PRIMARY KEY,
-                applied_at VARCHAR(30) NOT NULL
+                applied_at TIMESTAMPTZ NOT NULL
                     DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        connection.commit()
 
         migration_files = sorted(MIGRATIONS_DIR.glob("*.sql"))
 
@@ -67,7 +58,7 @@ def run_migrations(
                 """
                 SELECT 1
                 FROM schema_migrations
-                WHERE version = ?
+                WHERE version = %s
                 """,
                 (version,),
             ).fetchone()
@@ -84,29 +75,21 @@ def run_migrations(
             logger.info("Applying migration: %s", version)
 
             try:
-                # executescript manages its own transaction here.
-                # The migration and version record are committed together.
-                escaped_version = version.replace("'", "''")
+                # Migration SQL and tracking record share one transaction.
+                with connection.transaction():
+                    connection.execute(sql, prepare=False)
 
-                connection.executescript(
-                    f"""
-                    BEGIN IMMEDIATE;
-
-                    {sql}
-
-                    INSERT INTO schema_migrations (version)
-                    VALUES ('{escaped_version}');
-
-                    COMMIT;
-                    """
-                )
+                    connection.execute(
+                        """
+                        INSERT INTO schema_migrations (version)
+                        VALUES (%s)
+                        """,
+                        (version,),
+                    )
 
                 logger.info("Applied migration: %s", version)
 
             except Exception:
-                if connection.in_transaction:
-                    connection.rollback()
-
                 logger.exception(
                     "Migration failed: %s",
                     version,
@@ -114,9 +97,6 @@ def run_migrations(
                 raise
 
         logger.info("Database migrations completed successfully")
-
-    finally:
-        connection.close()
 
 
 def main() -> None:
@@ -126,17 +106,17 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(
-        description="Apply pending SQLite database migrations."
+        description="Apply pending PostgreSQL database migrations."
     )
+
     parser.add_argument(
-        "--db-path",
-        type=Path,
-        default=settings.database_path,
-        help="Path to the SQLite database file.",
+        "--database-url",
+        default=settings.database_url,
+        help="PostgreSQL connection URL.",
     )
 
     args = parser.parse_args()
-    run_migrations(db_path=args.db_path)
+    run_migrations(database_url=args.database_url)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.database.repositories.conversation_repository import (
+from app.database.repositories.postgres.conversation_repository import (
     ConversationRepository,
 )
 

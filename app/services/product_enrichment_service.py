@@ -7,8 +7,8 @@ from typing import Any
 
 
 from app.agents.ai.ai_client import AIClient
-from app.database.repositories.product_enrichment_repository import ProductEnrichmentRepository
-from app.database.repositories.product_repository import ProductRepository
+from app.database.repositories.postgres.product_enrichment_repository import ProductEnrichmentRepository
+from app.database.repositories.postgres.product_repository import ProductRepository
 from app.models.product_enrichment import ProductEnrichment, ProductEnrichmentOutput
 
 

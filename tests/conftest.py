@@ -21,8 +21,8 @@ from app.api.dependencies import (
 )
 from app.api.routers.chat import router as chat_router  # noqa: F401
 from app.database.connection import DatabaseConnection
-from app.database.repositories.conversation_repository import ConversationRepository
-from app.database.repositories.product_repository import ProductRepository
+from app.database.repositories.postgres.conversation_repository import ConversationRepository
+from app.database.repositories.postgres.product_repository import ProductRepository
 from app.main import app
 from app.services.conversation_store import ConversationStore
 from app.services.product_service import ProductService
