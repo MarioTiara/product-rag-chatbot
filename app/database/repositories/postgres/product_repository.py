@@ -17,11 +17,62 @@ class ProductRepository:
     def __init__(self, db: DatabaseConnection) -> None:
         self.db = db
 
+    # =====================================================
+    # Mapping
+    # =====================================================
+
+    @staticmethod
+    def _to_product(row: dict[str, Any] | None) -> Product | None:
+        if row is None:
+            return None
+
+        data = dict(row)
+
+        # Map database fields to Product model fields.
+        data["product_id"] = data.pop("id")
+        data["price"] = data.pop("price")
+
+        return Product.model_validate(data)
+
+    @staticmethod
+    def _to_db_params(product: Product) -> tuple[Any, ...]:
+        if not product.product_code:
+            raise ValueError("Product product_code is required.")
+
+        return (
+            product.product_id or str(uuid.uuid4()),
+            product.product_code,
+            product.brand,
+            product.model,
+            product.name,
+            product.os,
+            product.price,
+            product.processor_name,
+            product.processor_brand,
+            product.ram_expandable,
+            product.ram,
+            product.ram_type,
+            product.processor_ghz,
+            product.display_type,
+            product.display_inch,
+            product.gpu,
+            product.gpu_brand,
+            product.ssd_gb,
+            product.hdd_gb,
+            product.battery_life,
+            product.tags,
+            product.stock,
+        )
+
+    # =====================================================
+    # Basic Queries
+    # =====================================================
+
     @staticmethod
     def _tokenize(value: str) -> list[str]:
         return re.findall(r"[a-z0-9]+", value.lower())
 
-    def get_by_id(self, product_id: str) -> dict[str, Any] | None:
+    def get_by_id(self, product_id: str) -> Product | None:
         query = """
             SELECT *
             FROM products
@@ -30,11 +81,14 @@ class ProductRepository:
         """
 
         with self.db.connect() as connection:
-            row = connection.execute(query, (product_id,)).fetchone()
+            row = connection.execute(
+                query,
+                (product_id,),
+            ).fetchone()
 
-        return row
+        return self._to_product(row)
 
-    def get_by_code(self, product_code: str) -> dict[str, Any] | None:
+    def get_by_code(self, product_code: str) -> Product | None:
         query = """
             SELECT *
             FROM products
@@ -43,11 +97,14 @@ class ProductRepository:
         """
 
         with self.db.connect() as connection:
-            row = connection.execute(query, (product_code,)).fetchone()
+            row = connection.execute(
+                query,
+                (product_code,),
+            ).fetchone()
 
-        return row
+        return self._to_product(row)
 
-    def get_by_name(self, name: str) -> dict[str, Any] | None:
+    def get_by_name(self, name: str) -> Product | None:
         query = """
             SELECT *
             FROM products
@@ -67,7 +124,11 @@ class ProductRepository:
                 (name, f"%{name}%", name),
             ).fetchone()
 
-        return row
+        return self._to_product(row)
+
+    # =====================================================
+    # Sorting
+    # =====================================================
 
     @staticmethod
     def _build_order_by(
@@ -75,7 +136,7 @@ class ProductRepository:
         sort_order: str = "asc",
     ) -> str:
         sort_columns = {
-            "price": "usd_price",
+            "price": "price",
             "stock": "stock",
             "ram": "ram",
             "name": "name",
@@ -92,6 +153,10 @@ class ProductRepository:
                 name ASC,
                 product_code ASC
         """
+
+    # =====================================================
+    # Search Filters
+    # =====================================================
 
     def _build_filter_clauses(
         self,
@@ -229,11 +294,11 @@ class ProductRepository:
         )
 
         if min_price is not None:
-            clauses.append("usd_price >= %s")
+            clauses.append("price >= %s")
             params.append(min_price)
 
         if max_price is not None:
-            clauses.append("usd_price <= %s")
+            clauses.append("price <= %s")
             params.append(max_price)
 
         # Inventory
@@ -247,13 +312,17 @@ class ProductRepository:
 
         return clauses, params
 
+    # =====================================================
+    # Search
+    # =====================================================
+
     def search(
         self,
         filters: ProductSearchFilters,
         *,
         min_source_price: float | None = None,
         max_source_price: float | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[Product]:
 
         clauses, params = self._build_filter_clauses(
             filters,
@@ -289,9 +358,20 @@ class ProductRepository:
         )
 
         with self.db.connect() as connection:
-            rows = connection.execute(query, params).fetchall()
+            rows = connection.execute(
+                query,
+                params,
+            ).fetchall()
 
-        return rows
+        return [
+            product
+            for row in rows
+            if (product := self._to_product(row)) is not None
+        ]
+
+    # =====================================================
+    # Aggregation
+    # =====================================================
 
     def get_total_stock(
         self,
@@ -320,12 +400,20 @@ class ProductRepository:
         """
 
         with self.db.connect() as connection:
-            row = connection.execute(query, params).fetchone()
+            row = connection.execute(
+                query,
+                params,
+            ).fetchone()
 
         return int(row["total_stock"]) if row else 0
 
-    def insert(self, product: dict[str, Any]) -> dict[str, Any]:
-        generated_id = product.get("id") or str(uuid.uuid4())
+    # =====================================================
+    # Insert
+    # =====================================================
+
+    def insert(self, product: Product) -> Product:
+        params = self._to_db_params(product)
+        generated_id = params[0]
 
         query = """
             INSERT INTO products (
@@ -335,7 +423,7 @@ class ProductRepository:
                 model,
                 name,
                 os,
-                usd_price,
+                price,
                 processor_name,
                 processor_brand,
                 ram_expandable,
@@ -359,40 +447,29 @@ class ProductRepository:
             RETURNING *
         """
 
-        params = (
-            generated_id,
-            product["product_code"],
-            product["brand"],
-            product.get("model"),
-            product["name"],
-            product.get("os"),
-            product.get("usd_price"),
-            product.get("processor_name"),
-            product.get("processor_brand"),
-            product.get("ram_expandable", 0),
-            product.get("ram"),
-            product.get("ram_type"),
-            product.get("processor_ghz"),
-            product.get("display_type"),
-            product.get("display_inch"),
-            product.get("gpu"),
-            product.get("gpu_brand"),
-            product.get("ssd_gb"),
-            product.get("hdd_gb"),
-            product.get("battery_life"),
-            product.get("tags"),
-            product.get("stock", 0),
-        )
-
         with self.db.connect() as connection:
-            row = connection.execute(query, params).fetchone()
+            row = connection.execute(
+                query,
+                params,
+            ).fetchone()
 
         if row is None:
             raise RuntimeError(
                 f"Failed to retrieve inserted product: {generated_id}"
             )
 
-        return row
+        result = self._to_product(row)
+
+        if result is None:
+            raise RuntimeError(
+                f"Failed to map inserted product: {generated_id}"
+            )
+
+        return result
+
+    # =====================================================
+    # Get All
+    # =====================================================
 
     def get_all(self) -> list[Product]:
         query = """
@@ -405,11 +482,16 @@ class ProductRepository:
             rows = connection.execute(query).fetchall()
 
         return [
-            Product.from_row(row)
+            product
             for row in rows
+            if (product := self._to_product(row)) is not None
         ]
 
-    def upsert_many(self, products: list[dict[str, Any]]) -> int:
+    # =====================================================
+    # Bulk Upsert
+    # =====================================================
+
+    def upsert_many(self, products: list[Product]) -> int:
         if not products:
             return 0
 
@@ -421,7 +503,7 @@ class ProductRepository:
                 model,
                 name,
                 os,
-                usd_price,
+                price,
                 processor_name,
                 processor_brand,
                 ram_expandable,
@@ -447,7 +529,7 @@ class ProductRepository:
                 model = EXCLUDED.model,
                 name = EXCLUDED.name,
                 os = EXCLUDED.os,
-                usd_price = EXCLUDED.usd_price,
+                price = EXCLUDED.price,
                 processor_name = EXCLUDED.processor_name,
                 processor_brand = EXCLUDED.processor_brand,
                 ram_expandable = EXCLUDED.ram_expandable,
@@ -467,30 +549,7 @@ class ProductRepository:
         """
 
         params = [
-            (
-                product.get("id") or str(uuid.uuid4()),
-                product["product_code"],
-                product["brand"],
-                product.get("model"),
-                product["name"],
-                product.get("os"),
-                product.get("usd_price"),
-                product.get("processor_name"),
-                product.get("processor_brand"),
-                product.get("ram_expandable", 0),
-                product.get("ram"),
-                product.get("ram_type"),
-                product.get("processor_ghz"),
-                product.get("display_type"),
-                product.get("display_inch"),
-                product.get("gpu"),
-                product.get("gpu_brand"),
-                product.get("ssd_gb"),
-                product.get("hdd_gb"),
-                product.get("battery_life"),
-                product.get("tags"),
-                product.get("stock", 0),
-            )
+            self._to_db_params(product)
             for product in products
         ]
 
@@ -498,6 +557,10 @@ class ProductRepository:
             connection.executemany(query, params)
 
         return len(params)
+
+    # =====================================================
+    # Logging
+    # =====================================================
 
     def _log_query(
         self,

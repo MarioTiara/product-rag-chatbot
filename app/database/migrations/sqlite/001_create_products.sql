@@ -5,7 +5,7 @@ CREATE TABLE products (
     model VARCHAR(255),
     name VARCHAR(500) NOT NULL,
     os VARCHAR(100),
-    usd_price REAL,
+    price REAL,
     processor_name VARCHAR(255),
     processor_brand VARCHAR(100),
     ram_expandable INTEGER NOT NULL DEFAULT 0,

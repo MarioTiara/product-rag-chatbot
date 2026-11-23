@@ -75,7 +75,7 @@ class ProductRepository:
         sort_order: str = "asc",
     ) -> str:
         sort_columns = {
-            "price": "usd_price",
+            "price": "price",
             "stock": "stock",
             "ram": "ram",
             "name": "name",
@@ -229,11 +229,11 @@ class ProductRepository:
         )
 
         if min_price is not None:
-            clauses.append("usd_price >= ?")
+            clauses.append("price >= ?")
             params.append(min_price)
 
         if max_price is not None:
-            clauses.append("usd_price <= ?")
+            clauses.append("price <= ?")
             params.append(max_price)
 
         # Inventory
@@ -335,7 +335,7 @@ class ProductRepository:
                 model,
                 name,
                 os,
-                usd_price,
+                price,
                 processor_name,
                 processor_brand,
                 ram_expandable,
@@ -365,7 +365,7 @@ class ProductRepository:
             product.get("model"),
             product["name"],
             product.get("os"),
-            product.get("usd_price"),
+            product.get("price"),
             product.get("processor_name"),
             product.get("processor_brand"),
             product.get("ram_expandable", 0),
@@ -425,7 +425,7 @@ class ProductRepository:
                 model,
                 name,
                 os,
-                usd_price,
+                price,
                 processor_name,
                 processor_brand,
                 ram_expandable,
@@ -451,7 +451,7 @@ class ProductRepository:
                 model = excluded.model,
                 name = excluded.name,
                 os = excluded.os,
-                usd_price = excluded.usd_price,
+                price = excluded.price,
                 processor_name = excluded.processor_name,
                 processor_brand = excluded.processor_brand,
                 ram_expandable = excluded.ram_expandable,
@@ -478,7 +478,7 @@ class ProductRepository:
                 product.get("model"),
                 product["name"],
                 product.get("os"),
-                product.get("usd_price"),
+                product.get("price"),
                 product.get("processor_name"),
                 product.get("processor_brand"),
                 product.get("ram_expandable", 0),

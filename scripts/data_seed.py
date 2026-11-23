@@ -264,7 +264,7 @@ def normalize_product(
         "model": (row.get("Model") or "").strip() or None,
         "name": name,
         "os": (row.get("OS") or "").strip() or None,
-        "usd_price": parse_float(row.get("USD_Price")),
+        "price": parse_float(row.get("USD_Price")),
         "processor_name": (
             row.get("Processor_Name") or ""
         ).strip() or None,

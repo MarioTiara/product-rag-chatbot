@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from app.core.configs.config import get_settings
@@ -16,6 +17,10 @@ class ProductService:
         self.repository = repository or ProductRepository()
         self.target_currency = settings.price_target_currency.upper()
         self.conversion_rate = settings.price_conversion_rate
+
+    # =====================================================
+    # Price Conversion
+    # =====================================================
 
     def _convert_source_to_target(
         self,
@@ -37,6 +42,10 @@ class ProductService:
             }
         )
 
+    # =====================================================
+    # Product Details
+    # =====================================================
+
     def get_product_details(
         self,
         name: str,
@@ -46,14 +55,16 @@ class ProductService:
         if not name:
             return None
 
-        row = self.repository.get_by_name(name)
+        product = self.repository.get_by_name(name)
 
-        if row is None:
+        if product is None:
             return None
 
-        return self._normalize_product_prices(
-            Product.from_row(row)
-        )
+        return self._normalize_product_prices(product)
+
+    # =====================================================
+    # Product Search
+    # =====================================================
 
     def search_products(
         self,
@@ -61,31 +72,37 @@ class ProductService:
     ) -> list[Product]:
         filters = filters or ProductSearchFilters()
 
-        rows = self.repository.search(filters)
+        products = self.repository.search(filters)
 
         return [
-            self._normalize_product_prices(
-                Product.from_row(row)
-            )
-            for row in rows
+            self._normalize_product_prices(product)
+            for product in products
         ]
+
+    # =====================================================
+    # Product Availability
+    # =====================================================
 
     def check_product_availability(
         self,
         name: str,
-    ) -> dict | None:
+    ) -> dict[str, str | bool | int] | None:
         product = self.get_product_details(name)
 
         if product is None:
             return None
 
-        stock = product.stock or 0
+        stock = product.stock
 
         return {
             "product_name": product.name,
             "available": stock > 0,
             "stock": stock,
         }
+
+    # =====================================================
+    # Inventory
+    # =====================================================
 
     def get_total_stock(
         self,
